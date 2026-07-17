@@ -27,17 +27,16 @@ public class ConfigReader {
         }
     }
 
-
     public static String getProperty(String key) {
         if (!loaded) {
-            loadConfig("emulator.properties");
+            loadConfig("realdevice.properties");
         }
         return properties.getProperty(key);
     }
 
     public static String getProperty(String key, String defaultValue) {
         if (!loaded) {
-            loadConfig("emulator.properties");
+            loadConfig("realdevice.properties");
         }
         return properties.getProperty(key, defaultValue);
     }

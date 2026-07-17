@@ -1,35 +1,27 @@
 package pages;
 
 import io.appium.java_client.AppiumDriver;
-import org.openqa.selenium.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
-import pages.locators.ElementKey;
-import pages.locators.ElementRegistry;
-import utils.ConfigReader;
 import io.appium.java_client.HasOnScreenKeyboard;
 import io.appium.java_client.HidesKeyboard;
-import utils.ToastOcrHandler;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import utils.ConfigReader;
 
 import java.time.Duration;
 
 public class BasePage {
 
-    protected AppiumDriver driver;
-    protected WebDriverWait wait;
-    protected static final Logger log = LoggerFactory.getLogger(BasePage.class);
+    protected final AppiumDriver driver;
+    protected final WebDriverWait wait;
 
     public BasePage(AppiumDriver driver) {
         this.driver = driver;
-
-        long timeout = Long.parseLong(
-                ConfigReader.getProperty("timeout.explicit", "10")
-        );
-
+        long timeout = Long.parseLong(ConfigReader.getProperty("timeout.explicit", "10"));
         this.wait = new WebDriverWait(driver, Duration.ofSeconds(timeout));
     }
+
     protected boolean isDisplayed(By locator) {
         try {
             return waitVisible(locator).isDisplayed();
@@ -37,6 +29,7 @@ public class BasePage {
             return false;
         }
     }
+
     protected WebElement waitVisible(By locator) {
         return wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
     }
@@ -53,63 +46,34 @@ public class BasePage {
         WebElement el = waitVisible(locator);
         el.clear();
         el.sendKeys(text);
+
+        hideKeyboardIfShown();
     }
 
-    public boolean verifyErrorMessageViaOcr(String expectedMessage) {
-        String normalizedExpected = expectedMessage.toLowerCase()
-                .replaceAll("[^a-z0-9]", "");
-
-        log.info("Target normalized expected: [{}]", normalizedExpected);
-
-        WebDriverWait customWait = new WebDriverWait(driver, Duration.ofSeconds(5));
-        boolean isMatchFound = false;
-
+    public void clickIfElementAppears(By locator) {
         try {
-            isMatchFound = customWait.until(d -> {
-                String rawOcrText = ToastOcrHandler.captureAndReadToast(driver);
-
-                if (rawOcrText == null || rawOcrText.isEmpty()) {
-                    return false;
-                }
-
-                String normalizedOcr = rawOcrText.toLowerCase().replaceAll("[^a-z0-9]", "");
-                log.debug("Polling screen via OCR for compressed layout matches...");
-                System.out.println(("OCR result: [{}]"+ normalizedOcr));
-                return normalizedOcr.contains(normalizedExpected);
-            });
-        } catch (TimeoutException e) {
-            log.warn("Timeout: expected error text not found via OCR within 5 seconds.");
-        }
-        try {
-            By cancelBtn = ElementRegistry.get(ElementKey.CANCEL_BUTTON_CREATION);
-            waitClickable(cancelBtn).click();
-            log.info("Cancel creation button found and clicked.");
+            WebDriverWait shortWait = new WebDriverWait(driver, Duration.ofSeconds(3));
+            shortWait.until(ExpectedConditions.elementToBeClickable(locator)).click();
         } catch (Exception e) {
-            log.info("Cancel creation button was not visible on screen. Continuing test execution workflow.");
+            System.out.println("ℹ️ System element did not appear. Proceeding execution context...");
         }
-
-        return isMatchFound;
-    }
-
-    public void clickOkButton() {
-        click(ElementRegistry.get(ElementKey.OK_BUTTON));
     }
 
     protected void hideKeyboardIfShown() {
         try {
             if (driver instanceof HasOnScreenKeyboard && driver instanceof HidesKeyboard) {
                 boolean shown = ((HasOnScreenKeyboard) driver).isKeyboardShown();
-                log.info("Keyboard shown status: {}", shown);
+                System.out.println("Keyboard status: " + shown);
 
                 if (shown) {
                     ((HidesKeyboard) driver).hideKeyboard();
-                    log.info("hideKeyboard() called.");
+                    System.out.println("hideKeyboard() executed successfully.");
                 }
             } else {
-                log.warn("Driver does not support keyboard visibility APIs.");
+                System.out.println("Driver implementation context does not support native keyboard APIs.");
             }
         } catch (Exception e) {
-            log.warn("hideKeyboardIfShown() failed: {}", e.getMessage());
+            System.out.println("hideKeyboardIfShown() execution skipped: " + e.getMessage());
         }
     }
 }

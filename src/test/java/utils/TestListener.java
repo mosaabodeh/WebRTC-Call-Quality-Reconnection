@@ -1,23 +1,19 @@
 package utils;
 
-import com.aventstack.extentreports.ExtentTest;
-import com.aventstack.extentreports.Status;
+import drivers.DeviceManager;
+import io.appium.java_client.android.AndroidDriver;
+import io.qameta.allure.Attachment;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
 import org.testng.ITestContext;
 import org.testng.ITestListener;
 import org.testng.ITestResult;
-import java.io.File;
 
 public class TestListener implements ITestListener {
 
     @Override
     public void onStart(ITestContext context) {
         System.out.println("🚀 [SUITE START] Context initialized for: " + context.getName());
-        try {
-            ExtentManager.getInstance();
-        } catch (Exception e) {
-            System.err.println("❌ Error initializing ExtentManager inside onStart: " + e.getMessage());
-            e.printStackTrace();
-        }
     }
 
     @Override
@@ -27,74 +23,44 @@ public class TestListener implements ITestListener {
                 ? testDescription
                 : result.getMethod().getMethodName();
 
-        System.out.println("⏳ [TEST START] Launching test execution log for: " + testName);
-
-        try {
-            ExtentTest test = ExtentManager.getInstance().createTest(testName);
-            ExtentManager.setTest(test);
-        } catch (Exception e) {
-            System.err.println("❌ Error creating test node branch layer: " + e.getMessage());
-        }
+        System.out.println("⏳ [TEST START] Launching: " + testName);
     }
 
     @Override
     public void onTestSuccess(ITestResult result) {
-        System.out.println("✅ [TEST PASSED] Log recorded for: " + result.getName());
-        if (ExtentManager.getTest() != null) {
-            ExtentManager.getTest().log(Status.PASS, "Test Passed Successfully");
-        }
+        System.out.println("✅ [TEST PASSED] " + result.getName());
     }
 
     @Override
     public void onTestFailure(ITestResult result) {
-        System.out.println("❌ [TEST FAILED] Collecting logs and attachments for: " + result.getName());
-        if (ExtentManager.getTest() != null) {
-            ExtentManager.getTest().log(Status.FAIL, "Test Failed: " + result.getThrowable());
-        }
+        System.out.println("❌ [TEST FAILED] " + result.getName() + " -> Capturing failure screenshots...");
 
-        try {
-            File directory = new File(System.getProperty("user.dir") + File.separator + "screenshots");
-            if (directory.exists() && directory.isDirectory()) {
-                File[] files = directory.listFiles((dir, name) -> name.startsWith(result.getName()) && name.endsWith(".png"));
+        captureDeviceScreenshotSafely("Device A", DeviceManager.getDriverA());
+        captureDeviceScreenshotSafely("Device B", DeviceManager.getDriverB());
+    }
 
-                if (files != null && files.length > 0) {
-                    java.util.Arrays.sort(files, org.apache.commons.io.comparator.LastModifiedFileComparator.LASTMODIFIED_COMPARATOR);
-                    File latestScreenshot = files[files.length - 1];
-
-                    if (ExtentManager.getTest() != null) {
-                        ExtentManager.getTest().addScreenCaptureFromPath(latestScreenshot.getAbsolutePath(), "Failure Screenshot");
-                        System.out.println("🔗 Attached latest screenshot file matching: " + latestScreenshot.getName());
-                    }
-                }
+    private void captureDeviceScreenshotSafely(String deviceLabel, AndroidDriver driver) {
+        if (driver != null) {
+            try {
+                captureScreenshotToAllure(deviceLabel + " - Failure Screenshot", driver);
+            } catch (Exception e) {
+                System.err.println("⚠️ Failed to capture screenshot for " + deviceLabel + ": " + e.getMessage());
             }
-        } catch (Exception e) {
-            System.err.println("⚠️ Warning: Failed to find or bind screenshot file to layout. " + e.getMessage());
         }
     }
 
     @Override
     public void onTestSkipped(ITestResult result) {
-        if (ExtentManager.getTest() != null) {
-            ExtentManager.getTest().log(Status.SKIP, "Test Skipped");
-        }
+        System.out.println("⚠️ [TEST SKIPPED] " + result.getName());
     }
 
     @Override
     public void onFinish(ITestContext context) {
-        System.out.println("💾 [SUITE FINISH] Test processing completed for context: " + context.getName());
+        System.out.println("💾 [SUITE FINISH] Allure test processing completed for: " + context.getName());
+    }
 
-        // 🚀 THE CRITICAL SAFETY GUARD
-        try {
-            if (ExtentManager.getInstance() != null) {
-                System.out.println("📝 Attempting to write Extent Report down to disk drive memory...");
-                ExtentManager.getInstance().flush();
-                System.out.println("📊 Extent Report flushed and updated successfully for: " + context.getName());
-            } else {
-                System.out.println("⚠️ Warning: Extent instance was unexpectedly null inside onFinish processing!");
-            }
-        } catch (Exception e) {
-            System.err.println("❌ CRITICAL: Failed to flush report down onto storage filesystem! Error:");
-            e.printStackTrace();
-        }
+    @Attachment(value = "{attachmentName}", type = "image/png")
+    public byte[] captureScreenshotToAllure(String attachmentName, AndroidDriver driver) {
+        return ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
     }
 }

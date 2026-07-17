@@ -1,172 +1,258 @@
 package tests;
 
-import com.google.common.collect.ImmutableMap;
+import drivers.DeviceManager;
+import drivers.DriverFactory;
+import drivers.DriverFactory.DeviceConfig;
 import io.appium.java_client.android.AndroidDriver;
-import io.appium.java_client.android.options.UiAutomator2Options;
 import io.appium.java_client.service.local.AppiumDriverLocalService;
 import io.appium.java_client.service.local.AppiumServiceBuilder;
-import org.apache.commons.io.FileUtils;
-import org.openqa.selenium.OutputType;
-import org.openqa.selenium.TakesScreenshot;
-import org.testng.ITestResult;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.annotations.*;
-import pages.ProfilePage;
+import pages.locators.ElementKey;
+import pages.locators.ElementRegistry;
 import utils.ConfigReader;
-import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 
 public class BaseTest {
 
-    private static final ThreadLocal<AndroidDriver> driverThreadLocal = new ThreadLocal<>();
-    private static AppiumDriverLocalService server;
-
-    public AndroidDriver getDriver() {
-        return driverThreadLocal.get();
-    }
-
-    @BeforeSuite
-    public void startAppiumServer() {
-        AppiumServiceBuilder builder = new AppiumServiceBuilder()
-                .withIPAddress("127.0.0.1")
-                .usingPort(4723)
-                .withArgument(() -> "--allow-cors");
-
-        server = AppiumDriverLocalService.buildService(builder);
-        server.start();
-        System.out.println(">>> Appium Server started automatically <<<");
-    }
+    private static final Logger logger = LoggerFactory.getLogger(BaseTest.class);
+    private static final int ADB_COMMAND_TIMEOUT_SECONDS = 5;
+    protected static AppiumDriverLocalService appiumServer;
+    private static String appPackage;
 
     @BeforeClass
-    @Parameters({"environment", "systemPort"})
-    public void setUp(@Optional("realdevice") String targetEnv, @Optional("8201") String systemPort)  {
-        ConfigReader.loadConfig(targetEnv + ".properties");
+    public void setUpDevices() {
+        appPackage = ConfigReader.getProperty("app.package");
+        List<String> connectedUdids = getPhysicallyConnectedDevices();
+        logger.info("Devices physically connected to host: {}", connectedUdids);
 
-        UiAutomator2Options options = new UiAutomator2Options()
-                .setPlatformName(ConfigReader.getProperty("platform.name"))
-                .setAutomationName(ConfigReader.getProperty("automation.name"))
-                .setDeviceName(ConfigReader.getProperty("device.name"))
-                .setAppPackage(ConfigReader.getProperty("app.package"))
-                .setAppActivity(ConfigReader.getProperty("app.activity"))
-                .setNoReset(!isSignUpTestClass())
-                .setFullReset(false);
+        List<DeviceConfig> allConfigs = List.of(
+                DriverFactory.loadConfig("A"),
+                DriverFactory.loadConfig("B"));
 
-        options.setSystemPort(Integer.parseInt(systemPort));
-        options.setCapability("appium:resetKeyboard", true);
-        options.setCapability("appium:ensureWebviewsHavePages", true);
-        options.setCapability("appium:settings[allowWindowOcclusion]", true);
-        options.setCapability("appium:includeWindows", false);
-        String udid = ConfigReader.getProperty("device.udid");
-        if (udid != null && !udid.isEmpty()) {
-            options.setUdid(udid);
-            System.out.println("🎯 >>> Target device UDID set to: " + udid);
+        List<DeviceConfig> activeConfigs = allConfigs.stream()
+                .filter(c -> connectedUdids.contains(c.udid()))
+                .toList();
+
+        if (activeConfigs.isEmpty()) {
+            throw new IllegalStateException("No configured devices are physically connected! Please connect at least one device.");
         }
 
-        AndroidDriver currentDriver = new AndroidDriver(server.getUrl(), options);
-        driverThreadLocal.set(currentDriver);
-        System.out.println("📱 >>> Driver initialized successfully for environment: " + targetEnv);
+        activeConfigs.forEach(c -> logger.info("Device {} ({}) will be used.", c.label(), c.udid()));
+        allConfigs.stream()
+                .filter(c -> !activeConfigs.contains(c))
+                .forEach(c -> logger.warn("Device {} ({}) is configured but NOT physically connected. Skipping.", c.label(), c.udid()));
+
+        logger.info("Running pre-test port and device cleanup for connected devices...");
+        activeConfigs.parallelStream().forEach(c -> cleanDevicePorts(c.udid()));
+
+        startAppiumServer();
+
+        final URL serverUrl = appiumServer.getUrl();
+        final Duration implicitWait = Duration.ofSeconds(
+                Long.parseLong(ConfigReader.getProperty("implicit.wait", "10")));
+        final long staggerMs = Long.parseLong(ConfigReader.getProperty("device.init.staggerMs", "4000"));
+        final long bootTimeoutSec = Long.parseLong(ConfigReader.getProperty("device.init.timeoutSeconds", "60"));
+
+        boolean isAActive = activeConfigs.stream().anyMatch(c -> c.label().equals("A"));
+        boolean isBActive = activeConfigs.stream().anyMatch(c -> c.label().equals("B"));
+
+        List<CompletableFuture<AndroidDriver>> activeFutures = new ArrayList<>();
+
+        if (isAActive) {
+            DeviceConfig configA = allConfigs.stream().filter(c -> c.label().equals("A")).findFirst().orElseThrow();
+            CompletableFuture<AndroidDriver> futureA = initializeDevice(configA, serverUrl, implicitWait, 0);
+
+            futureA.whenComplete((driver, ex) -> {
+                if (driver != null) {
+                    DeviceManager.setDriverA(driver);
+                    logger.info("Device A registered successfully in DeviceManager.");
+                }
+            });
+            activeFutures.add(futureA);
+        }
+
+        if (isBActive) {
+            DeviceConfig configB = allConfigs.stream().filter(c -> c.label().equals("B")).findFirst().orElseThrow();
+            long delay = isAActive ? staggerMs : 0;
+            CompletableFuture<AndroidDriver> futureB = initializeDevice(configB, serverUrl, implicitWait, delay);
+            futureB.whenComplete((driver, ex) -> {
+                if (driver != null) {
+                    DeviceManager.setDriverB(driver);
+                    logger.info("Device B registered successfully in DeviceManager.");
+                }
+            });
+            activeFutures.add(futureB);
+        }
+
+        try {
+            CompletableFuture.allOf(activeFutures.toArray(new CompletableFuture[0]))
+                    .get(bootTimeoutSec, TimeUnit.SECONDS);
+            logger.info("Connected devices registered successfully! Test suite ready.");
+        } catch (Exception e) {
+            logger.error("Device startup sequence failed. Aborting test execution.", e);
+
+            DeviceManager.unload();
+            throw new RuntimeException("Could not boot devices successfully.", e);
+        }
     }
 
     @BeforeMethod
-    public void launchAppCleanly() {
-        if (getDriver() != null) {
-            String appPackage = ConfigReader.getProperty("app.package");
-
-            try {
-                System.out.println("🔄 >>> Cycling application state...");
-                getDriver().terminateApp(appPackage);
-                getDriver().activateApp(appPackage);
-
-                new ProfilePage(getDriver()).logOutIfLoggedIn();
-
-                if (isSignUpTestClass()) {
-                    System.out.println("🔗 >>> Aligning target view via Sign-Up Deep Link routing...");
-                    triggerDeepLink("rainbow://signup", appPackage);
-                } else {
-                    System.out.println("🔗 >>> Aligning target view via Home Deep Link routing...");
-                    triggerDeepLink("rainbow://openrainbow.net", appPackage);
-                }
-
-                System.out.println("✅ >>> App is active and ready for test execution.");
-
-                waitForScreenReady();
-            } catch (Exception e) {
-                System.out.println("⚠️ Fallback: Forcing basic app activation due to: " + e.getMessage());
-                getDriver().activateApp(appPackage);
-            }
-        }
+    public void startAppBeforeTest() {
+        logger.info("♻️ Ensuring application is launched in foreground before test...");
+        launchApp(DeviceManager.getDriverA());
+        launchApp(DeviceManager.getDriverB());
     }
 
-    protected void waitForScreenReady() {
-        // Intentionally empty — subclasses override if they need a screen-ready check.
+    @AfterMethod(alwaysRun = true)
+    public void cleanUpAfterTestMethod() {
+        logger.info("🧹 Test method execution finished. Resetting application states...");
+        terminateAppSafely(DeviceManager.getDriverA());
+        terminateAppSafely(DeviceManager.getDriverB());
     }
 
-    private boolean isSignUpTestClass() {
-        return this.getClass().getName().contains("SignUp");
-    }
-
-    @AfterMethod
-    public void tearDownAfterMethod(ITestResult result) {
-        if (ITestResult.FAILURE == result.getStatus()) {
-            takeScreenshot(result.getName());
-        }
-        System.out.println("🔄 >>> Test Method Finished.");
-    }
-
-    private void triggerDeepLink(String url, String appPackage) {
-        try {
-            getDriver().executeScript("mobile: deepLink", ImmutableMap.of(
-                    "url", url,
-                    "package", appPackage
-            ));
-        } catch (Exception e) {
-            System.out.println("⚠️ Standard Deep Link failed, trying alternative ADB intent injection...");
-            getDriver().executeScript("mobile: shell", ImmutableMap.of(
-                    "command", "am start",
-                    "args", "-a android.intent.action.VIEW -d " + url + " " + appPackage
-            ));
-        }
-    }
-
-    @AfterClass
+    @AfterClass(alwaysRun = true)
     public void tearDown() {
-        if (getDriver() != null) {
+        logger.info("🛑 Destroying active driver sessions...");
+        quitDriverSafely(DeviceManager.getDriverA());
+        quitDriverSafely(DeviceManager.getDriverB());
+        DeviceManager.clear();
+
+        logger.info("Shutting down Appium server...");
+        stopAppiumServer();
+    }
+
+    private void launchApp(AndroidDriver driver) {
+        if (driver != null) {
             try {
-                getDriver().quit();
-                System.out.println(">>> Driver session quit successfully. <<<");
+                driver.activateApp(appPackage);
             } catch (Exception e) {
-                System.out.println("⚠️ Driver session was already closed: " + e.getMessage());
+                logger.warn("Failed to activate app on device: {}", e.getMessage());
             }
         }
-        driverThreadLocal.remove();
-        System.out.println(">>> Test Class Finished execution. Thread resources cleared. <<<");
     }
 
-    @AfterSuite
-    public void stopAppiumServer() {
-        if (server != null && server.isRunning()) {
-            server.stop();
-            System.out.println(">>> Appium Server stopped automatically <<<");
+    private void terminateAppSafely(AndroidDriver driver) {
+        if (driver != null) {
+            try {
+                logger.info("Closing application: {}", appPackage);
+                driver.terminateApp(appPackage);
+            } catch (Exception e) {
+                logger.warn("Failed to terminate app: {}", e.getMessage());
+            }
         }
     }
 
-    public void takeScreenshot(String testName) {
-        if (getDriver() == null) return;
+    private void quitDriverSafely(AndroidDriver driver) {
+        if (driver != null) {
+            try {
+                driver.quit();
+            } catch (Exception e) {
+                logger.warn("Error while quitting driver session: {}", e.getMessage());
+            }
+        }
+    }
 
+    protected boolean isUserAlreadyLoggedIn(AndroidDriver driver) {
         try {
-            File srcFile = ((TakesScreenshot) getDriver()).getScreenshotAs(OutputType.FILE);
-            String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-            String folderPath = System.getProperty("user.dir") + "/screenshots/";
-            String filePath = folderPath + testName + "_" + timestamp + ".png";
-
-            File screenshotFolder = new File(folderPath);
-            if (!screenshotFolder.exists()) {
-                screenshotFolder.mkdirs();
-            }
-            FileUtils.copyFile(srcFile, new File(filePath));
-            System.out.println("❌ Test Failed! Screenshot captured at: " + filePath);
+            WebDriverWait quickWait = new WebDriverWait(driver, Duration.ofSeconds(4));
+            quickWait.until(ExpectedConditions.visibilityOfElementLocated(ElementRegistry.get(ElementKey.SEARCHBAR)));
+            return true;
         } catch (Exception e) {
-            System.out.println("⚠️ Exception occurred while capturing screenshot.");
+            return false;
         }
+    }
+
+    private List<String> getPhysicallyConnectedDevices() {
+        List<String> connectedUdids = new ArrayList<>();
+        try {
+            Process process = new ProcessBuilder("adb", "devices")
+                    .redirectErrorStream(true)
+                    .start();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.endsWith("device")) {
+                        connectedUdids.add(line.split("\\s+")[0]);
+                    }
+                }
+            }
+            process.waitFor(5, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            logger.warn("Could not fetch physically connected devices via ADB: {}", e.getMessage());
+        }
+        return connectedUdids;
+    }
+
+    private CompletableFuture<AndroidDriver> initializeDevice(DeviceConfig config, URL serverUrl,
+                                                              Duration implicitWait, long startDelayMs) {
+        var executor = startDelayMs > 0
+                ? CompletableFuture.delayedExecutor(startDelayMs, TimeUnit.MILLISECONDS)
+                : ForkJoinPool.commonPool();
+
+        return CompletableFuture.supplyAsync(() -> {
+            logger.info("Starting boot for Device {} ({})...", config.label(), config.udid());
+            try {
+                AndroidDriver driver = DriverFactory.create(config, serverUrl, implicitWait);
+                logger.info("Device {} is fully active and ready.", config.label());
+                return driver;
+            } catch (Exception e) {
+                logger.error("Critical failure initializing Device {} ({})", config.label(), config.udid(), e);
+                throw new RuntimeException("Device " + config.label() + " failed startup.", e);
+            }
+        }, executor);
+    }
+
+    private void cleanDevicePorts(String udid) {
+        if (udid == null || udid.isBlank()) return;
+        logger.debug("Clearing ADB forwards & killing orphaned servers on: {}", udid);
+        executeCommand("adb", "-s", udid, "forward", "--remove-all");
+        executeCommand("adb", "-s", udid, "shell", "am", "force-stop", "io.appium.uiautomator2.server");
+        executeCommand("adb", "-s", udid, "shell", "am", "force-stop", "io.appium.uiautomator2.server.test");
+    }
+
+    private void executeCommand(String... command) {
+        try {
+            Process process = new ProcessBuilder(command).redirectErrorStream(true).start();
+            boolean finished = process.waitFor(ADB_COMMAND_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            if (!finished) {
+                process.destroyForcibly();
+                logger.warn("Command timed out and was killed: {}", String.join(" ", command));
+            } else if (process.exitValue() != 0) {
+                logger.debug("Command exited with {}: {}", process.exitValue(), String.join(" ", command));
+            }
+        } catch (Exception e) {
+            logger.warn("Non-fatal error executing command [{}]: {}", String.join(" ", command), e.getMessage());
+        }
+    }
+
+    protected void startAppiumServer() {
+        if (appiumServer == null) {
+            appiumServer = new AppiumServiceBuilder()
+                    .withArgument(() -> "--relaxed-security")
+                    .build();
+            appiumServer.start();
+            logger.info("🚀 Appium Server started with --relaxed-security enabled.");
+        }
+    }
+
+    protected void stopAppiumServer() {
+        if (appiumServer != null && appiumServer.isRunning()) {
+            appiumServer.stop();
+            logger.info("🛑 Appium Server stopped.");
+        }
+        appiumServer = null; // critical: allows a fresh server for the next test class
     }
 }

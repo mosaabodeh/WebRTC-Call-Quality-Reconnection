@@ -12,127 +12,87 @@ public class ElementRegistry {
     static {
         Map<ElementKey, By> mobile = new HashMap<>();
 
-        // Permissions
-        mobile.put(ElementKey.ALLOW_CONTACT_BUTTON,
-                By.id("com.android.permissioncontroller:id/permission_allow_button"));
-
-        // Avatar
-        mobile.put(ElementKey.CHANGE_AVATAR,
-                AppiumBy.androidUIAutomator(
-                        "new UiSelector().className(\"android.view.View\").instance(18)"));
-
-        mobile.put(ElementKey.UPLOAD_PHOTO,
-                AppiumBy.androidUIAutomator(
-                        "new UiSelector().className(\"android.view.View\").instance(5)"));
-
-        mobile.put(ElementKey.SELECT_USER_PHONE_PHOTO,
-                AppiumBy.androidUIAutomator(
-                        "new UiSelector().className(\"android.view.View\").instance(5)"));
-
-        mobile.put(ElementKey.DONE_BUTTON,
-                By.id("com.sec.android.gallery3d:id/menu_edit_app_bar_done"));
-
-        mobile.put(ElementKey.SAVE_BUTTON,
-                AppiumBy.androidUIAutomator(
-                        "new UiSelector().className(\"android.view.View\").instance(12)"));
-
-        mobile.put(ElementKey.CANCEL_BUTTON,
-                AppiumBy.id("com.sec.android.gallery3d:id/menu_edit_app_bar_cancel"));
-
-        // Navigation
-        mobile.put(ElementKey.NAVIGATE_BACK,
-                AppiumBy.androidUIAutomator(
-                        "new UiSelector().className(\"android.view.View\").instance(19)"));
-
-        // Continue
-        mobile.put(ElementKey.CONTINUE_BUTTON,
-                AppiumBy.androidUIAutomator(
-                        "new UiSelector().text(\"Continue\")"));
-
-        mobile.put(ElementKey.CONTINUE_BUTTON_ASSERTION,
-                AppiumBy.id("com.ale.rainbow:id/continueButton"));
-
-        // Gallery
-        mobile.put(ElementKey.JUST_ONE_SELECT,
-                AppiumBy.androidUIAutomator(
-                        "new UiSelector().resourceId(\"android:id/button_once\")"));
-
-        // Signup
-        mobile.put(ElementKey.SIGNUP_FIELD,
-                AppiumBy.androidUIAutomator(
-                        "new UiSelector().className(\"android.widget.Button\").instance(1)"));
-
-        mobile.put(ElementKey.TERMS_CHECKBOX,
-                AppiumBy.androidUIAutomator(
-                        "new UiSelector()"
-                                + ".className(\"android.widget.CheckBox\")"
-                                + ".packageName(\"com.ale.rainbow\")"
-                                + ".checkable(true)"));
-
-        mobile.put(ElementKey.SCROLL_CONTAINER_LOCATOR,
-                By. xpath(
-                        "//android.widget.ListView | //android.widget.ScrollView | //android.view.View[@scrollable='true']"));
-
-        mobile.put(ElementKey.FIRST_NAME_FIELD,
-                By. xpath(
-                        "//android.widget.EditText[./android.widget.TextView[contains(@text,'First name')]]"));
-
-        mobile.put(ElementKey.LAST_NAME_FIELD,
+        mobile.put(ElementKey.CALL_BUTTON,
+                AppiumBy.androidUIAutomator("new UiSelector().description(\"Call\")"));
+        //For select audio call from popup
+        mobile.put(ElementKey.AUDIO_CALL_BUTTON,
+                AppiumBy.androidUIAutomator("new UiSelector().text(\"Audio call\")"));
+        mobile.put(ElementKey.FIRST_Search_RESULT,
                 By.xpath(
-                        "//android.widget.EditText[./android.widget.TextView[contains(@text,'Last name')]]"));
+                        "//android.view.View[@resource-id=\"conversation_list\"]/android.view.View[1]/android.view.View[2]"));
+        mobile.put(ElementKey.ALLOW_BUTTON,
+                By.id("com.android.permissioncontroller:id/permission_allow_foreground_only_button"));
 
-        mobile.put(ElementKey.COUNTRY_DROPDOWN_FIELD,
-                AppiumBy.androidUIAutomator(
-                        "new UiSelector().text(\"France\")"));
-
-        mobile.put(ElementKey.FINISH_BUTTON,
-                AppiumBy.androidUIAutomator(
-                        "new UiSelector().className(\"android.view.View\").instance(10)"));
-
-        mobile.put(ElementKey.CANCEL_BUTTON_CREATION,
-                AppiumBy.androidUIAutomator(
-                        "new UiSelector().className(\"android.view.View\").instance(5)"));
-
-        // Authentication
-        mobile.put(ElementKey.EMAIL_FIELD,
-                AppiumBy.androidUIAutomator(
-                        "new UiSelector().className(\"android.widget.EditText\").instance(0)"));
-        mobile.put(ElementKey.OK_BUTTON,
-                AppiumBy.androidUIAutomator(
-                        "new UiSelector().className(\"android.view.View\").instance(4)"));
-        mobile.put(ElementKey.SIGN_IN_BUTTON,
-                AppiumBy.androidUIAutomator(
-                        "new UiSelector().className(\"android.view.View\").instance(12)"));
-        mobile.put(ElementKey.NO_BUTTON,
-                AppiumBy.androidUIAutomator(
-                        "new UiSelector().className(\"android.widget.Button\").instance(1)"));
-        mobile.put(ElementKey.SIGN_UP_BUTTON,
-                AppiumBy.androidUIAutomator(
-                        "new UiSelector().className(\"android.view.View\").instance(10)"));
-
-        mobile.put(ElementKey.PASSWORD_FIELD,
+        mobile.put(ElementKey.SEARCHBAR,
                 By.xpath(
-                        "//android.widget.EditText[.//android.widget.TextView[@text='Enter a password']]"));
+                        "//android.widget.Button[@content-desc=\"Do a global search in Rainbow\"]"));
+        mobile.put(ElementKey.SEARCHBAR_Field,
+                AppiumBy.androidUIAutomator(
+                        "new UiSelector().resourceId(\"com.ale.rainbow:id/search_src_text\")"));
 
-        mobile.put(ElementKey.VERIFICATION_FIELD,
-                By.xpath(
-                        "//android.widget.EditText[.//android.widget.TextView[@text='Verification code']]"));
-       mobile.put(
-                ElementKey.USER_MENU,
-                By.xpath("//androidx.compose.ui.platform.ComposeView[@resource-id='com.ale.rainbow:id/compose_view']/android.view.View/android.view.View[1]")
-        );
+        mobile.put(ElementKey.QUALITY_SIGN,
+                AppiumBy.id("com.ale.rainbow:id/qualityIndicatorImageView"));
 
+        mobile.put(ElementKey.CALL_STATUS_TEXT,
+                AppiumBy.androidUIAutomator(
+                        "new UiSelector().textMatches(\"^(Outgoing Call|Incoming Call|Connection in progress.*|Connected|Calling)$\")"  ));
 
+        mobile.put(ElementKey.VIDEO_CALL_BUTTON,
+                AppiumBy.androidUIAutomator("new UiSelector().className(\"android.widget.LinearLayout\").instance(3)"));
+
+        mobile.put(ElementKey.CALL_TIMER,
+                AppiumBy.xpath(
+                        "//android.widget.TextView[@package='com.ale.rainbow' " +
+                                "and contains(@text, ':') " +
+                                "and not(contains(@text, ' ')) " +
+                                "and string-length(@text) <= 5]"
+                ));
+        mobile.put(ElementKey.ANSWER_VIDEO,
+                AppiumBy.id(
+                        "com.ale.rainbow:id/button_answer_video"));
+        mobile.put(ElementKey.MOREOPTION,
+                AppiumBy.id(
+                        "More options"));
+        mobile.put(ElementKey.ACCEPT_CALL_BUTTON,
+                AppiumBy.id(
+                        "com.ale.rainbow:id/button_answer"));
+
+        mobile.put(ElementKey.HANG_UP_BUTTON,
+                AppiumBy.androidUIAutomator("new UiSelector().resourceId(\"com.ale.rainbow:id/button_hangup\")"));
+        mobile.put(ElementKey.REJECT_CALL_BUTTON,
+                AppiumBy.id("com.ale.rainbow:id/button_reject"));
+
+        mobile.put(ElementKey.REMOTE_VIDEO_CONTAINER,
+                By.id(
+                        "com.ale.rainbow:id/videoContainer"));//enable,display
+
+        mobile.put(ElementKey.VIDEO_UPGRADE_BUTTON,
+               By.id("com.ale.rainbow:id/buttonAddVideo"));
+        mobile.put(ElementKey.ALLOW_ACCESS_CAMERA,
+                By.id("com.ale.rainbow:id/buttonAddVideo"));
         mobile.put(
-                ElementKey.LOGOUT_BUTTON,
-                AppiumBy.id("com.ale.rainbow:id/drawer_exit")
+                ElementKey.EMAIL_FIELD,
+                AppiumBy.androidUIAutomator("new UiSelector().className(\"android.widget.EditText\").instance(0)")
         );
 
         mobile.put(
-                ElementKey.LOGOUT_CONFIRM,
-                AppiumBy.id("android:id/button1")
+                ElementKey.PASSWORD_FIELD,
+                By.xpath("//android.widget.EditText[.//android.widget.TextView[@text='Password'] or @text='Password']"));
+        mobile.put(
+                ElementKey.CONTINUE_BUTTON,
+                AppiumBy.androidUIAutomator("new UiSelector().className(\"android.view.View\").instance(7)")
         );
-        REGISTRY.put("android", mobile);    }
+
+        mobile.put(
+                ElementKey.LOGIN_SUBMIT_BUTTON,
+                AppiumBy.androidUIAutomator("new UiSelector().className(\"android.view.View\").instance(10)")
+        );
+
+        mobile.put(ElementKey.USER_PROFILE_AVATAR,
+                AppiumBy.androidUIAutomator( "new UiSelector().className(\"android.view.View\").instance(1)"));
+
+        REGISTRY.put("android", mobile);
+    }
 
     public static By get(ElementKey key) {
         Map<ElementKey, By> map = REGISTRY.get("android");
