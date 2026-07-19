@@ -44,10 +44,10 @@ public class CallPage extends BasePage {
 
             WebElement statusElement = waitVisible(ElementRegistry.get(ElementKey.CALL_STATUS_TEXT));
             String statusText = statusElement.getText();
-            System.out.println("📱 Current Call Status: " + statusText);
+            System.out.println("Current Call Status: " + statusText);
             return statusText;
         } catch (Exception e) {
-            System.out.println("⚠️ Could not fetch call status text: " + e.getMessage());
+            System.out.println("Could not fetch call status text: " + e.getMessage());
             return "";
         }
     }
@@ -67,10 +67,10 @@ public class CallPage extends BasePage {
         AndroidDriver androidDriver = (AndroidDriver) this.driver;
         if (turnOn) {
             androidDriver.setConnection(new ConnectionStateBuilder().withAirplaneModeEnabled().build());
-            System.out.println("✈️ Airplane Mode turned ON successfully.");
+            System.out.println("Airplane Mode turned ON successfully.");
         } else {
             androidDriver.setConnection(new ConnectionStateBuilder().withWiFiEnabled().withDataEnabled().build());
-            System.out.println("📡 Airplane Mode turned OFF. Network restored.");
+            System.out.println("Airplane Mode turned OFF. Network restored.");
         }
         WaiteForTime(3.1);
     }
@@ -92,7 +92,6 @@ public class CallPage extends BasePage {
             boolean isHangUpVisible ;
             boolean isNetworkQuilityAppear ;
             boolean isMoreOptionVisible;
-
             try {
                 isHangUpVisible = waitVisible(ElementRegistry.get(ElementKey.HANG_UP_BUTTON)).isDisplayed();
             } catch (Exception e) {

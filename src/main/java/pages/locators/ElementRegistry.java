@@ -88,9 +88,6 @@ public class ElementRegistry {
                 AppiumBy.androidUIAutomator("new UiSelector().className(\"android.view.View\").instance(10)")
         );
 
-        mobile.put(ElementKey.USER_PROFILE_AVATAR,
-                AppiumBy.androidUIAutomator( "new UiSelector().className(\"android.view.View\").instance(1)"));
-
         REGISTRY.put("android", mobile);
     }
 

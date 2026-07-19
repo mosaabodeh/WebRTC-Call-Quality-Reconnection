@@ -111,14 +111,14 @@ public class BaseTest {
 
     @BeforeMethod
     public void startAppBeforeTest() {
-        logger.info("♻️ Ensuring application is launched in foreground before test...");
+        logger.info(" Ensuring application is launched in foreground before test...");
         launchApp(DeviceManager.getDriverA());
         launchApp(DeviceManager.getDriverB());
     }
 
     @AfterMethod(alwaysRun = true)
     public void cleanUpAfterTestMethod() {
-        logger.info("🧹 Test method execution finished. Resetting application states...");
+        logger.info(" Test method execution finished. Resetting application states...");
         terminateAppSafely(DeviceManager.getDriverA());
         terminateAppSafely(DeviceManager.getDriverB());
     }
