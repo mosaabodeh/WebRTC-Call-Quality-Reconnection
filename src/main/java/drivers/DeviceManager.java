@@ -28,6 +28,17 @@ public class DeviceManager {
     }
 
     public static void unload() {
+        for (Map.Entry<String, AndroidDriver> entry : drivers.entrySet()) {
+            AndroidDriver driver = entry.getValue();
+            if (driver != null) {
+                try {
+                    System.out.println("🔄 [DeviceManager] Quitting active session for Device " + entry.getKey() + " during cleanup...");
+                    driver.quit();
+                } catch (Exception e) {
+                    System.err.println("⚠️ [DeviceManager] Failed to quit driver safely for Device " + entry.getKey() + ": " + e.getMessage());
+                }
+            }
+        }
         clear();
     }
 }

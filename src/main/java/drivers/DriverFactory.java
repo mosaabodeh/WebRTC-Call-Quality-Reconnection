@@ -28,8 +28,9 @@ public class DriverFactory {
         return driver;
     }
 
-    private static UiAutomator2Options buildOptions(DeviceConfig config) {
+    public static UiAutomator2Options buildOptions(DeviceConfig config) {
         String appPackage = ConfigReader.getProperty("app.package");
+
         return new UiAutomator2Options()
                 .setUdid(config.udid())
                 .setAutomationName(ConfigReader.getProperty("automation.name", "UiAutomator2"))
@@ -39,6 +40,11 @@ public class DriverFactory {
                 .setChromedriverPort(config.chromedriverPort())
                 .setMjpegServerPort(config.mjpegServerPort())
                 .setClearDeviceLogsOnStart(true)
+
+                .amend("appium:uiautomator2ServerInstallTimeout", 30000)
+                .amend("appium:adbExecTimeout", 20000)
+                .amend("appium:amStartAsHome", true)
+
                 .amend("appium:skipServerCleanup", false)
                 .amend("appium:shouldTerminateApp", true)
                 .setNoReset(Boolean.parseBoolean(ConfigReader.getProperty("appium.noReset", "true")))

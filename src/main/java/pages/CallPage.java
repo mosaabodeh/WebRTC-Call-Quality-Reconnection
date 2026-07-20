@@ -62,26 +62,6 @@ public class CallPage extends BasePage {
                 .exec(new String[]{"adb", "-s", deviceId, "shell", "svc", "wifi", state});
         process.waitFor(3, TimeUnit.SECONDS);
     }
-    public void toggleWiFi(boolean turnOn) {
-        try {
-            //to be change to adb
-            WaiteForTime(1.2);
-            AndroidDriver androidDriver = (AndroidDriver) this.driver;
-            androidDriver.toggleWifi();
-            System.out.println("🔄 Wi-Fi state toggled.");
-
-            if (turnOn) {
-                waitVisible(ElementRegistry.get(ElementKey.CALL_TIMER));
-                System.out.println("✅ Wi-Fi turned ON and Call Timer is visible.");
-            } else {
-                String status = getCallStatus();
-                System.out.println("the Result Of Wifi Off Is : " + status.toLowerCase().contains("connection in progress"));
-            }
-
-        } catch (Exception e) {
-            System.out.println("⚠️ Neither status appeared within the timeout period. Error: " + e.getMessage());
-        }
-    }
 
     public void endCallSilently() {
         try {

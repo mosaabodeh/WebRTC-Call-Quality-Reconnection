@@ -41,22 +41,24 @@ public class WebRtcCallTest extends BaseTest {
         }
 
         List<CompletableFuture<Void>> loginTasks = new ArrayList<>();
-        boolean hasA = (driverA != null);
-        boolean hasB = (driverB != null);
 
-        if (hasA) {
-            LoginPage loginPageA = new LoginPage(driverA);
-            boolean isLoggedA = loginPageA.isUserAlreadyLoggedIn();
+        if (driverA != null) {
             loginTasks.add(CompletableFuture.runAsync(() -> {
-                if (!isLoggedA) loginPageA.login(emailA, passwordA);
+                LoginPage loginPageA = new LoginPage(driverA);
+                if (!loginPageA.isUserAlreadyLoggedIn()) {
+                    System.out.println("🔐 Device A is not logged in. Initiating login procedure...");
+                    loginPageA.login(emailA, passwordA);
+                }
             }));
         }
 
-        if (hasB) {
-            LoginPage loginPageB = new LoginPage(driverB);
-            boolean isLoggedB = loginPageB.isUserAlreadyLoggedIn();
+        if (driverB != null) {
             loginTasks.add(CompletableFuture.runAsync(() -> {
-                if (!isLoggedB) loginPageB.login(emailB, passwordB);
+                LoginPage loginPageB = new LoginPage(driverB);
+                if (!loginPageB.isUserAlreadyLoggedIn()) {
+                    System.out.println("🔐 Device B is not logged in. Initiating login procedure...");
+                    loginPageB.login(emailB, passwordB);
+                }
             }));
         }
 
@@ -64,11 +66,7 @@ public class WebRtcCallTest extends BaseTest {
             CompletableFuture.allOf(loginTasks.toArray(new CompletableFuture[0])).join();
         }
 
-        if (hasA) {
-            dashboardAInstance = new DashboardPage(driverA);
-        } else {
-            dashboardAInstance = new DashboardPage(driverB);
-        }
+        dashboardAInstance = (driverA != null) ? new DashboardPage(driverA) : new DashboardPage(driverB);
     }
 
     private void audioCall() {

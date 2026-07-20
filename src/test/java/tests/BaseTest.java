@@ -133,32 +133,58 @@ public class BaseTest {
 
     @AfterMethod(alwaysRun = true)
     public void cleanUpAfterTestMethod() {
-        logger.info("Test method execution finished. Resetting application states and verifying WiFi...");
+        logger.info("Test method execution finished. Resetting application states in parallel...");
 
         if (callB.get() != null) {
-            try { callB.get().endCallSilently(); } catch (Exception ignored) {}
+            CompletableFuture.runAsync(() -> {
+                try { callB.get().endCallSilently(); } catch (Exception ignored) {}
+            }).orTimeout(3, TimeUnit.SECONDS).exceptionally(ex -> null);
         }
         if (callA.get() != null) {
-            try { callA.get().endCallSilently(); } catch (Exception ignored) {}
+            CompletableFuture.runAsync(() -> {
+                try { callA.get().endCallSilently(); } catch (Exception ignored) {}
+            }).orTimeout(3, TimeUnit.SECONDS).exceptionally(ex -> null);
         }
 
         AndroidDriver driverA = DeviceManager.getDriverA();
         AndroidDriver driverB = DeviceManager.getDriverB();
+        List<CompletableFuture<Void>> cleanupTasks = new ArrayList<>();
 
         if (driverA != null) {
-            terminateAppSafely(driverA);
-            String udidA = getUdidFromDriver(driverA);
-            ensureWifiEnabled(udidA);
+            cleanupTasks.add(CompletableFuture.runAsync(() -> {
+                try {
+                    terminateAppSafely(driverA);
+                    String udidA = getUdidFromDriver(driverA);
+                    ensureWifiEnabled(udidA);
+                } catch (Exception e) {
+                    logger.warn("Error during Device A cleanup thread: {}", e.getMessage());
+                }
+            }).orTimeout(7, TimeUnit.SECONDS));
         }
 
         if (driverB != null) {
-            terminateAppSafely(driverB);
-            String udidB = getUdidFromDriver(driverB);
-            ensureWifiEnabled(udidB);
+            cleanupTasks.add(CompletableFuture.runAsync(() -> {
+                try {
+                    terminateAppSafely(driverB);
+                    String udidB = getUdidFromDriver(driverB);
+                    ensureWifiEnabled(udidB);
+                } catch (Exception e) {
+                    logger.warn("Error during Device B cleanup thread: {}", e.getMessage());
+                }
+            }).orTimeout(7, TimeUnit.SECONDS));
         }
 
+        if (!cleanupTasks.isEmpty()) {
+            try {
+                CompletableFuture.allOf(cleanupTasks.toArray(new CompletableFuture[0]))
+                        .get(10, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                logger.warn("Some cleanup tasks timed out or failed, forcing continuation: {}", e.getMessage());
+            }
+        }
         callA.remove();
         callB.remove();
+        logger.info("Parallel cleanup finished successfully.");
     }
 
     @AfterClass(alwaysRun = true)
