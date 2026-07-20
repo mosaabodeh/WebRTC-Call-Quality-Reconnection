@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class DeviceManager {
-    // نستخدم ماب آمنة للـ Threads بدلاً من الـ ThreadLocal العادي لحفظ المراجع بشكل مستقر
     private static final Map<String, AndroidDriver> drivers = new ConcurrentHashMap<>();
 
     public static AndroidDriver getDriverA() {
