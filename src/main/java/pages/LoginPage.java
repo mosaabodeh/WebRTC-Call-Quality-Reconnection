@@ -24,7 +24,7 @@ public class LoginPage extends BasePage {
         hideKeyboardIfShown();
         click(ElementRegistry.get(ElementKey.LOGIN_SUBMIT_BUTTON));
     }
-    public boolean isUserAlreadyLoggedIn(AndroidDriver driver) {
+    public boolean isUserAlreadyLoggedIn() {
         try {
             WebDriverWait quickWait = new WebDriverWait(driver, Duration.ofSeconds(4));
             quickWait.until(ExpectedConditions.visibilityOfElementLocated(ElementRegistry.get(ElementKey.SEARCHBAR)));

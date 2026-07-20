@@ -46,7 +46,7 @@ public class WebRtcCallTest extends BaseTest {
 
         if (hasA) {
             LoginPage loginPageA = new LoginPage(driverA);
-            boolean isLoggedA = loginPageA.isUserAlreadyLoggedIn(driverA);
+            boolean isLoggedA = loginPageA.isUserAlreadyLoggedIn();
             loginTasks.add(CompletableFuture.runAsync(() -> {
                 if (!isLoggedA) loginPageA.login(emailA, passwordA);
             }));
@@ -54,7 +54,7 @@ public class WebRtcCallTest extends BaseTest {
 
         if (hasB) {
             LoginPage loginPageB = new LoginPage(driverB);
-            boolean isLoggedB = loginPageB.isUserAlreadyLoggedIn(driverB);
+            boolean isLoggedB = loginPageB.isUserAlreadyLoggedIn();
             loginTasks.add(CompletableFuture.runAsync(() -> {
                 if (!isLoggedB) loginPageB.login(emailB, passwordB);
             }));
