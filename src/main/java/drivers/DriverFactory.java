@@ -41,8 +41,8 @@ public class DriverFactory {
                 .setMjpegServerPort(config.mjpegServerPort())
                 .setClearDeviceLogsOnStart(true)
 
-                .amend("appium:uiautomator2ServerInstallTimeout", 30000)
-                .amend("appium:adbExecTimeout", 20000)
+                .amend("appium:uiautomator2ServerInstallTimeout", 15000)
+                .amend("appium:adbExecTimeout", 10000)
                 .amend("appium:amStartAsHome", true)
 
                 .amend("appium:skipServerCleanup", false)

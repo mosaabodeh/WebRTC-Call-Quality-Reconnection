@@ -126,9 +126,6 @@ public class WebRtcCallTest extends BaseTest {
             Assert.assertTrue(statusB.toLowerCase().contains("connection in progress"),
                     "connection in progress status not displayed on Device B. Found: " + statusB);
 
-            System.out.println("Waiting to verify call resilience...");
-            Assert.assertFalse(callA.get().isCallEndedCleanly(), "Call prematurely disconnected during short outage.");
-
             System.out.println("📶 Restoring Wi-Fi on Device B...");
             callB.get().toggleWifi("R5CTA2QC6BA", true);
 

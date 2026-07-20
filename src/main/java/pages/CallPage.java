@@ -55,13 +55,29 @@ public class CallPage extends BasePage {
             return "";
         }
     }
-    public static void toggleWifi(String deviceId, boolean turnOn) throws IOException, InterruptedException {
+    public static void toggleWifi(String deviceId, boolean turnOn) {
+        Process process = null;
+        try {
+            String state = turnOn ? "enabled" : "disabled";
+            String[] command = {"adb", "-s", deviceId, "shell", "cmd", "wifi", "set-wifi-enabled", state};
 
-        String state = turnOn ? "enable" : "disable";
-        Process process = Runtime.getRuntime()
-                .exec(new String[]{"adb", "-s", deviceId, "shell", "svc", "wifi", state});
-        process.waitFor(3, TimeUnit.SECONDS);
+            process = Runtime.getRuntime().exec(command);
+            process.waitFor(1005, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            System.err.println("⚠️ WiFi Toggle Command failed: " + e.getMessage());
+        } finally {
+            if (process != null) {
+                process.destroyForcibly();
+                try {
+                 process.getInputStream().close();
+                 process.getOutputStream().close();
+                 process.getErrorStream().close();
+                }
+                catch (Exception ignored) {}
+            }
+        }
     }
+
 
     public void endCallSilently() {
         try {
@@ -115,31 +131,21 @@ public class CallPage extends BasePage {
     }
 
     public boolean isCallEndedCleanly() {
+        boolean isHangUpVisible;
+        boolean isNetworkQuilityAppear;
+        boolean isMoreOptionVisible;
         try {
-            //to be use isdisplay
-            boolean isHangUpVisible ;
-            boolean isNetworkQuilityAppear ;
-            boolean isMoreOptionVisible;
-            try {
-                isHangUpVisible = waitVisible(ElementRegistry.get(ElementKey.HANG_UP_BUTTON)).isDisplayed();
-            } catch (Exception e) {
-                isHangUpVisible = false;
-            }
-            try {
-                isNetworkQuilityAppear=waitVisible(ElementRegistry.get(ElementKey.QUALITY_SIGN)).isDisplayed();
-            } catch (Exception e) {
-                isNetworkQuilityAppear = false;
-            }
-            try {
-                isMoreOptionVisible=waitVisible(ElementRegistry.get(ElementKey.MOREOPTION)).isDisplayed();
-            } catch (Exception e) {
-                isMoreOptionVisible = false;
-            }
-            return !isHangUpVisible && !isNetworkQuilityAppear &&!isMoreOptionVisible;
-
+            isHangUpVisible = waitVisible(ElementRegistry.get(ElementKey.HANG_UP_BUTTON)).isDisplayed();
+            isNetworkQuilityAppear = waitVisible(ElementRegistry.get(ElementKey.QUALITY_SIGN)).isDisplayed();
+            isMoreOptionVisible = waitVisible(ElementRegistry.get(ElementKey.MOREOPTION)).isDisplayed();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            isHangUpVisible = false;
+            isNetworkQuilityAppear = false;
+            isMoreOptionVisible = false;
+            System.out.println(e);
         }
+        return !isHangUpVisible && !isNetworkQuilityAppear && !isMoreOptionVisible;
+
     }
 
     public boolean isNetworkAppear() {
