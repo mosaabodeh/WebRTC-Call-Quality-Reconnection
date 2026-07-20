@@ -1,44 +1,34 @@
 package drivers;
 
 import io.appium.java_client.android.AndroidDriver;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class DeviceManager {
-    private static AndroidDriver driverA;
-    private static AndroidDriver driverB;
+    // نستخدم ماب آمنة للـ Threads بدلاً من الـ ThreadLocal العادي لحفظ المراجع بشكل مستقر
+    private static final Map<String, AndroidDriver> drivers = new ConcurrentHashMap<>();
 
-    public static synchronized void setDriverA(AndroidDriver driver) {
-        driverA = driver;
+    public static AndroidDriver getDriverA() {
+        return drivers.get("A");
     }
 
-    public static synchronized void setDriverB(AndroidDriver driver) {
-        driverB = driver;
+    public static void setDriverA(AndroidDriver driver) {
+        if (driver != null) drivers.put("A", driver);
     }
 
-    public static synchronized AndroidDriver getDriverA() {
-        return driverA;
+    public static AndroidDriver getDriverB() {
+        return drivers.get("B");
     }
 
-    public static synchronized AndroidDriver getDriverB() {
-        return driverB;
+    public static void setDriverB(AndroidDriver driver) {
+        if (driver != null) drivers.put("B", driver);
     }
 
-
-    public static synchronized void clear() {
-        driverA = null;
-        driverB = null;
+    public static void clear() {
+        drivers.clear();
     }
 
-    public static synchronized void unload() {
-        if (driverA != null) {
-            try {
-                driverA.quit();
-            } catch (Exception ignored) {}
-        }
-        if (driverB != null) {
-            try {
-                driverB.quit();
-            } catch (Exception ignored) {}
-        }
+    public static void unload() {
         clear();
     }
 }

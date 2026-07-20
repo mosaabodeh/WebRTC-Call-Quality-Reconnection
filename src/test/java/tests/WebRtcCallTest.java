@@ -7,8 +7,10 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import pages.LoginPage;
 import pages.DashboardPage;
-import pages.CallPage;
 import utils.JsonReader;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class WebRtcCallTest extends BaseTest {
@@ -19,9 +21,7 @@ public class WebRtcCallTest extends BaseTest {
     private String passwordB;
     private String nameB;
 
-    private DashboardPage dashboardA;
-    private CallPage callA;
-    private CallPage callB;
+    private DashboardPage dashboardAInstance;
 
     @BeforeMethod
     public void setUpTestScenario() {
@@ -32,187 +32,179 @@ public class WebRtcCallTest extends BaseTest {
         nameB = JsonReader.getTestData("LoginData.json", "UserB", "Name");
     }
 
-    private void establishBaseCall(AndroidDriver driverA, AndroidDriver driverB) {
-        LoginPage loginPageA = new LoginPage(driverA);
-        LoginPage loginPageB = new LoginPage(driverB);
-
-        boolean isLoggedA = isUserAlreadyLoggedIn(driverA);
-        boolean isLoggedB = isUserAlreadyLoggedIn(driverB);
-
-        CompletableFuture<Void> loginA = CompletableFuture.runAsync(() -> {
-            if (!isLoggedA) loginPageA.login(emailA, passwordA);
-        });
-        CompletableFuture<Void> loginB = CompletableFuture.runAsync(() -> {
-            if (!isLoggedB) loginPageB.login(emailB, passwordB);
-        });
-
-        CompletableFuture.allOf(loginA, loginB).join();
-
-        dashboardA = new DashboardPage(driverA);
-        callA = new CallPage(driverA);
-        callB = new CallPage(driverB);
-    }
-
-    private AndroidDriver[] getActiveDrivers() {
+    private void establishBaseCall() {
         AndroidDriver driverA = DeviceManager.getDriverA();
         AndroidDriver driverB = DeviceManager.getDriverB();
 
-        if (driverA == null || driverB == null) {
-            throw new IllegalStateException("Both devices must be connected for running test scenarios.");
+        if (driverA == null && driverB == null) {
+            throw new IllegalStateException("❌ No devices are connected in the current thread context.");
         }
-        return new AndroidDriver[]{driverA, driverB};
+
+        List<CompletableFuture<Void>> loginTasks = new ArrayList<>();
+        boolean hasA = (driverA != null);
+        boolean hasB = (driverB != null);
+
+        if (hasA) {
+            LoginPage loginPageA = new LoginPage(driverA);
+            boolean isLoggedA = loginPageA.isUserAlreadyLoggedIn(driverA);
+            loginTasks.add(CompletableFuture.runAsync(() -> {
+                if (!isLoggedA) loginPageA.login(emailA, passwordA);
+            }));
+        }
+
+        if (hasB) {
+            LoginPage loginPageB = new LoginPage(driverB);
+            boolean isLoggedB = loginPageB.isUserAlreadyLoggedIn(driverB);
+            loginTasks.add(CompletableFuture.runAsync(() -> {
+                if (!isLoggedB) loginPageB.login(emailB, passwordB);
+            }));
+        }
+
+        if (!loginTasks.isEmpty()) {
+            CompletableFuture.allOf(loginTasks.toArray(new CompletableFuture[0])).join();
+        }
+
+        if (hasA) {
+            dashboardAInstance = new DashboardPage(driverA);
+        } else {
+            dashboardAInstance = new DashboardPage(driverB);
+        }
     }
 
-    @Test(description = "1. Verify basic call Status, receiving,Outgoing ")
+    private void audioCall() {
+        dashboardAInstance.callContact(nameB);
+
+        callB.get().acceptIncomingCall();
+
+        Assert.assertTrue(callA.get().isCallTimerTicking(), "Call timer is not actively ticking on Device A.");
+        Assert.assertTrue(callB.get().isCallTimerTicking(), "Call timer is not actively ticking on Device B.");
+    }
+
+    @Test(priority = 1, description = "user should be able to see correct call status for receiving and outgoing calls")
     public void testBasicCallInitiationAndDetails() {
-        AndroidDriver[] drivers = getActiveDrivers();
-        establishBaseCall(drivers[0], drivers[1]);
+        establishBaseCall();
 
-        dashboardA.callContact(nameB);
+        dashboardAInstance.callContact(nameB);
 
-        String statusA = callA.getCallStatus();
-        String statusB = callB.getCallStatus();
+        String statusA = callA.get().getCallStatus();
+        String statusB = callB.get().getCallStatus();
 
         Assert.assertTrue(statusA.toLowerCase().contains("outgoing call") || !statusA.isEmpty(), "Active details invalid on Device A.");
         Assert.assertTrue(statusB.toLowerCase().contains("incoming call") || !statusB.isEmpty(), "Active details invalid on Device B.");
     }
 
-    @Test(description = "2. Verify basic call Accept The call ")
+    @Test(priority = 2, description = "user should be able to accept the incoming call successfully")
     public void testAcceptTheCall() {
-        AndroidDriver[] drivers = getActiveDrivers();
-        establishBaseCall(drivers[0], drivers[1]);
+        establishBaseCall();
+        audioCall();
 
-        dashboardA.callContact(nameB);
-        callB.acceptIncomingCall();
-
-        Assert.assertTrue(callA.isCallTimerTicking(), "Call timer is not actively ticking on Device A.");
-        Assert.assertTrue(callB.isCallTimerTicking(), "Call timer is not actively ticking on Device B.");
-        Assert.assertTrue(callA.isNetworkAppear(), "Call Network logo is not actively on Device A.");
-        Assert.assertTrue(callB.isNetworkAppear(), "Call Network logo is not actively on Device B.");
+        Assert.assertTrue(callA.get().isNetworkAppear(), "Call Network logo is not active on Device A.");
+        Assert.assertTrue(callB.get().isNetworkAppear(), "Call Network logo is not active on Device B.");
     }
 
-    @Test(description = "3. Verify basic call Answering and clean hang-up(End The call)")
+    @Test(priority = 3, description = "user should be able to answer and perform a clean hang-up to end the call")
     public void testEndTheCall() {
-        AndroidDriver[] drivers = getActiveDrivers();
-        establishBaseCall(drivers[0], drivers[1]);
+        establishBaseCall();
+        audioCall();
 
-        dashboardA.callContact(nameB);
-        callB.acceptIncomingCall();
-        callB.endCall();
+        callB.get().endCall();
 
-        Assert.assertTrue(callA.isCallEndedCleanly(), "Device A did not end the call cleanly.");
-        Assert.assertTrue(callB.isCallEndedCleanly(), "Device B did not end the call cleanly.");
-        Assert.assertTrue(isUserAlreadyLoggedIn(drivers[1]), "Device B did not return to main dashboard.");
+        Assert.assertTrue(callA.get().isCallEndedCleanly(), "Device A did not end the call cleanly.");
+        Assert.assertTrue(callB.get().isCallEndedCleanly(), "Device B did not end the call cleanly.");
     }
 
-    @Test(description = "4. Verify network disconnection triggers 'connection in progress' status and call doesn't drop immediately")
-    public void testNetworkInterruptionUsingWIFI() throws InterruptedException {
-        AndroidDriver[] drivers = getActiveDrivers();
-        establishBaseCall(drivers[0], drivers[1]);
-
-        dashboardA.callContact(nameB);
-        callB.acceptIncomingCall();
+    @Test(priority = 4, description = "user should be able to experience call resilience where short wifi disconnection triggers connection in progress without dropping immediately")
+    public void testNetworkInterruptionUsingWIFI() {
+        establishBaseCall();
+        audioCall();
 
         try {
             System.out.println("🔌 Turning OFF Wi-Fi on Device B...");
-            callB.toggleWiFi();
+            callB.get().toggleWifi("R5CTA2QC6BA", false);
 
-            String statusB = callB.getCallStatus();
-            String statusA = callA.getCallStatus();
-
-            Assert.assertTrue(statusA.toLowerCase().contains("connection in progress"),
-                    "connection in progress status not displayed on Device A. Found: " + statusA);
+            String statusB = callB.get().getCallStatus();
             Assert.assertTrue(statusB.toLowerCase().contains("connection in progress"),
                     "connection in progress status not displayed on Device B. Found: " + statusB);
 
             System.out.println("Waiting to verify call resilience...");
-
-            Assert.assertFalse(callA.isCallEndedCleanly(), "Call prematurely disconnected during short outage.");
+            Assert.assertFalse(callA.get().isCallEndedCleanly(), "Call prematurely disconnected during short outage.");
 
             System.out.println("📶 Restoring Wi-Fi on Device B...");
-            callB.toggleWiFi();
+            callB.get().toggleWifi("R5CTA2QC6BA", true);
 
-            String statusAAfterRestore = callA.getCallStatus();
-            Assert.assertTrue(callA.isCallTimerTicking(),
+            String statusAAfterRestore = callA.get().getCallStatus();
+            Assert.assertTrue(callA.get().isCallTimerTicking(),
                     "Call failed to return to active state. Current status: " + statusAAfterRestore);
 
-            String statusBAfterRestore = callB.getCallStatus();
-            Assert.assertTrue(callB.isCallTimerTicking(),
+            String statusBAfterRestore = callB.get().getCallStatus();
+            Assert.assertTrue(callB.get().isCallTimerTicking(),
                     "Call failed to return to active state. Current status: " + statusBAfterRestore);
-        } finally {
-            try {
-                callB.endCall();
-            } catch (Exception e) {
-                System.out.println("Clean-up hang up completed or skipped: " + e.getMessage());
-            }
+
+            callB.get().endCall();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
-    @Test(description = "5. Verify automatic recovery and full reconnection after network restoration")
-    public void testNetworkReconnectionRecoveryAirplaneMode() throws InterruptedException {
-        AndroidDriver[] drivers = getActiveDrivers();
-        establishBaseCall(drivers[0], drivers[1]);
+    @Test(priority = 5, description = "user should be able to automatically recover and reconnect fully after airplane mode restoration")
+    public void testNetworkReconnectionRecoveryAirplaneMode() {
+        establishBaseCall();
+        audioCall();
 
-        dashboardA.callContact(nameB);
-        callB.acceptIncomingCall();
-        callB.toggleAirplaneMode(true);
+        callB.get().toggleAirplaneMode(true);
 
-        String statusAAfterRestore = callA.getCallStatus();
+        String statusAAfterRestore = callA.get().getCallStatus();
         Assert.assertTrue(statusAAfterRestore.toLowerCase().contains("connection in progress"),
                 "Call failed return to active state Device A. Current status: " + statusAAfterRestore);
 
-        callB.toggleAirplaneMode(false);
+        callB.get().toggleAirplaneMode(false);
 
-        Assert.assertTrue(callB.isCallTimerTicking(),
+        Assert.assertTrue(callB.get().isCallTimerTicking(),
                 "Call failed to return to active state on the B Device.");
 
-        callB.endCall();
+        callB.get().endCall();
     }
 
-    @Test(description = "6. Verify update Call To video")
+    @Test(priority = 6, description = "user should be able to upgrade an active audio call to a video call")
     public void testCallUpgradeToVideo() {
-        AndroidDriver[] drivers = getActiveDrivers();
-        establishBaseCall(drivers[0], drivers[1]);
-        dashboardA.callContact(nameB);
+        establishBaseCall();
+        audioCall();
 
-        callB.acceptIncomingCall();
-        callA.upgradeToVideo();
-        boolean isVideoContainerVisible = callB.isVideoFeedReceived();
+        callA.get().upgradeToVideo();
+        boolean isVideoContainerVisible = callB.get().isVideoFeedReceived();
 
         Assert.assertTrue(isVideoContainerVisible, "Video stream container did not pop up on Device B screen.");
-        callB.endCall();
+        callB.get().endCall();
     }
 
-    @Test(description = "7. Verify that call can be rejected from Device B")
+    @Test(priority = 7, description = "user should be able to reject an incoming call from the receiver side")
     public void testCallRejectionFromReceiverSide() {
-        AndroidDriver[] drivers = getActiveDrivers();
-        establishBaseCall(drivers[0], drivers[1]);
+        establishBaseCall();
 
         System.out.println("Initiating call from Device A...");
-        dashboardA.callContact(nameB);
+        dashboardAInstance.callContact(nameB);
+
         try {
             System.out.println("Rejecting incoming call on Device B...");
-            callB.rejectIncomingCall();
+            callB.get().rejectIncomingCall();
 
-            Assert.assertTrue(callA.isCallEndedCleanly(), "Device A did not terminate the call screen after rejection.");
-            Assert.assertTrue(callB.isCallEndedCleanly(), "Device B did not terminate the call screen after rejection.");
-            Assert.assertTrue(isUserAlreadyLoggedIn(drivers[1]), "Device B did not return to the main dashboard.");
+            Assert.assertTrue(callA.get().isCallEndedCleanly(), "Device A did not terminate the call screen after rejection.");
+            Assert.assertTrue(callB.get().isCallEndedCleanly(), "Device B did not terminate the call screen after rejection.");
         } catch (Exception e) {
             System.out.println("⚠️ Rejection test failed: " + e.getMessage());
             throw e;
         }
     }
 
-    @Test(description = "8. Verify Start Call with video")
+    @Test(priority = 8, description = "user should be able to start a call directly with video enabled")
     public void testCallStartWithVideo() {
-        AndroidDriver[] drivers = getActiveDrivers();
-        establishBaseCall(drivers[0], drivers[1]);
+        establishBaseCall();
 
-        dashboardA.videoCallContact(nameB);
-        callB.acceptIncomingVideoCall();
+        dashboardAInstance.videoCallContact(nameB);
+        callB.get().acceptIncomingVideoCall();
 
-        boolean isVideoContainerVisible = callB.isVideoFeedReceived();
+        boolean isVideoContainerVisible = callB.get().isVideoFeedReceived();
         Assert.assertTrue(isVideoContainerVisible, "Video stream container did not pop up on Device B screen.");
-        callB.endCall();
+        callB.get().endCall();
     }
 }

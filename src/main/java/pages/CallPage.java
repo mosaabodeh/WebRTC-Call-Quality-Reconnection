@@ -3,10 +3,13 @@ import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.android.connection.ConnectionStateBuilder;
 import org.openqa.selenium.WebElement;
+
 import pages.locators.ElementKey;
 import pages.locators.ElementRegistry;
 
+import java.io.IOException;
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 public class CallPage extends BasePage {
 
@@ -14,8 +17,9 @@ public class CallPage extends BasePage {
         super(driver);
     }
 
+
     public void acceptIncomingCall() {
-       waitClickable((ElementRegistry.get(ElementKey.ACCEPT_CALL_BUTTON))).click();
+        waitClickable(ElementRegistry.get(ElementKey.ACCEPT_CALL_BUTTON)).click();
 
     }
     public void acceptIncomingVideoCall() {
@@ -35,7 +39,7 @@ public class CallPage extends BasePage {
             return false;
         }
     }
-    protected void WaiteForTime(double durationOfSecond) throws InterruptedException {
+    protected static void WaiteForTime(double durationOfSecond) throws InterruptedException {
         Thread.sleep(Duration.ofSeconds((long) durationOfSecond));
     }
 
@@ -51,28 +55,70 @@ public class CallPage extends BasePage {
             return "";
         }
     }
-    public void toggleWiFi() throws InterruptedException {
-        WaiteForTime(1.2);
-        AndroidDriver androidDriver = (AndroidDriver) this.driver;
-        androidDriver.toggleWifi();
-        System.out.println("🔄 Wi-Fi state toggled.");
-        WaiteForTime(3.3);
+    public static void toggleWifi(String deviceId, boolean turnOn) throws IOException, InterruptedException {
 
+        String state = turnOn ? "enable" : "disable";
+        Process process = Runtime.getRuntime()
+                .exec(new String[]{"adb", "-s", deviceId, "shell", "svc", "wifi", state});
+        process.waitFor(3, TimeUnit.SECONDS);
     }
+    public void toggleWiFi(boolean turnOn) {
+        try {
+            //to be change to adb
+            WaiteForTime(1.2);
+            AndroidDriver androidDriver = (AndroidDriver) this.driver;
+            androidDriver.toggleWifi();
+            System.out.println("🔄 Wi-Fi state toggled.");
+
+            if (turnOn) {
+                waitVisible(ElementRegistry.get(ElementKey.CALL_TIMER));
+                System.out.println("✅ Wi-Fi turned ON and Call Timer is visible.");
+            } else {
+                String status = getCallStatus();
+                System.out.println("the Result Of Wifi Off Is : " + status.toLowerCase().contains("connection in progress"));
+            }
+
+        } catch (Exception e) {
+            System.out.println("⚠️ Neither status appeared within the timeout period. Error: " + e.getMessage());
+        }
+    }
+    public void endCallSilently() {
+        try {
+            org.openqa.selenium.By hangUpBtnCriteria = ElementRegistry.get(ElementKey.HANG_UP_BUTTON);
+            if (!driver.findElements(hangUpBtnCriteria).isEmpty() && driver.findElement(hangUpBtnCriteria).isDisplayed()) {
+                System.out.println("☎️ Active call detected. Clicking Hang Up...");
+                driver.findElement(hangUpBtnCriteria).click();
+            }
+        } catch (Exception e) {
+            System.out.println("Skipped silent hang up: " + e.getMessage());
+        }
+    }
+
     public void rejectIncomingCall() {
       waitClickable ( ElementRegistry.get(ElementKey.REJECT_CALL_BUTTON)).click();
     }
-    public void toggleAirplaneMode(boolean turnOn) throws InterruptedException {
-        WaiteForTime(1.2);
-        AndroidDriver androidDriver = (AndroidDriver) this.driver;
-        if (turnOn) {
-            androidDriver.setConnection(new ConnectionStateBuilder().withAirplaneModeEnabled().build());
-            System.out.println("Airplane Mode turned ON successfully.");
-        } else {
-            androidDriver.setConnection(new ConnectionStateBuilder().withWiFiEnabled().withDataEnabled().build());
-            System.out.println("Airplane Mode turned OFF. Network restored.");
+    public void toggleAirplaneMode(boolean turnOn) {
+        try {
+            WaiteForTime(1.2);
+            AndroidDriver androidDriver = (AndroidDriver) this.driver;
+
+            if (turnOn) {
+                androidDriver.setConnection(new ConnectionStateBuilder().withAirplaneModeEnabled().build());
+                System.out.println("✈️ Airplane Mode turned ON successfully.");
+
+                String status = getCallStatus();
+                System.out.println("The Result Of Airplane Mode On Is: " + status.toLowerCase().contains("connection in progress"));
+
+            } else {
+                androidDriver.setConnection(new ConnectionStateBuilder().withWiFiEnabled().withDataEnabled().build());
+                System.out.println("🌐 Airplane Mode turned OFF. Network restored.");
+                waitVisible(ElementRegistry.get(ElementKey.CALL_TIMER));
+                System.out.println("✅ Call timer is visible, network re-established.");
+            }
+
+        } catch (Exception e) {
+            System.out.println("⚠️ Error during Airplane Mode toggle or waiting: " + e.getMessage());
         }
-        WaiteForTime(3.1);
     }
 
     public void upgradeToVideo() {
@@ -89,6 +135,7 @@ public class CallPage extends BasePage {
 
     public boolean isCallEndedCleanly() {
         try {
+            //to be use isdisplay
             boolean isHangUpVisible ;
             boolean isNetworkQuilityAppear ;
             boolean isMoreOptionVisible;

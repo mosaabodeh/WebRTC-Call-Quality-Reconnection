@@ -6,13 +6,12 @@ import drivers.DriverFactory.DeviceConfig;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.service.local.AppiumDriverLocalService;
 import io.appium.java_client.service.local.AppiumServiceBuilder;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.*;
-import pages.locators.ElementKey;
-import pages.locators.ElementRegistry;
+
+import pages.CallPage;
 import utils.ConfigReader;
 
 import java.io.BufferedReader;
@@ -31,6 +30,10 @@ public class BaseTest {
     private static final int ADB_COMMAND_TIMEOUT_SECONDS = 5;
     protected static AppiumDriverLocalService appiumServer;
     private static String appPackage;
+
+    // ThreadLocal isolation for page object context mapping
+    protected static final ThreadLocal<CallPage> callA = new ThreadLocal<>();
+    protected static final ThreadLocal<CallPage> callB = new ThreadLocal<>();
 
     @BeforeClass
     public void setUpDevices() {
@@ -103,7 +106,6 @@ public class BaseTest {
             logger.info("Connected devices registered successfully! Test suite ready.");
         } catch (Exception e) {
             logger.error("Device startup sequence failed. Aborting test execution.", e);
-
             DeviceManager.unload();
             throw new RuntimeException("Could not boot devices successfully.", e);
         }
@@ -111,27 +113,77 @@ public class BaseTest {
 
     @BeforeMethod
     public void startAppBeforeTest() {
-        logger.info(" Ensuring application is launched in foreground before test...");
-        launchApp(DeviceManager.getDriverA());
-        launchApp(DeviceManager.getDriverB());
+        logger.info("Ensuring application is launched in foreground and preparing localized page instances...");
+
+        AndroidDriver driverA = DeviceManager.getDriverA();
+        AndroidDriver driverB = DeviceManager.getDriverB();
+
+        if (driverA != null) {
+            launchApp(driverA);
+            callA.set(new CallPage(driverA));
+            logger.debug("CallPage A mapped into active ThreadLocal context.");
+        }
+
+        if (driverB != null) {
+            launchApp(driverB);
+            callB.set(new CallPage(driverB));
+            logger.debug("CallPage B mapped into active ThreadLocal context.");
+        }
     }
 
     @AfterMethod(alwaysRun = true)
     public void cleanUpAfterTestMethod() {
-        logger.info(" Test method execution finished. Resetting application states...");
-        terminateAppSafely(DeviceManager.getDriverA());
-        terminateAppSafely(DeviceManager.getDriverB());
+        logger.info("Test method execution finished. Resetting application states and verifying WiFi...");
+
+        if (callB.get() != null) {
+            try { callB.get().endCallSilently(); } catch (Exception ignored) {}
+        }
+        if (callA.get() != null) {
+            try { callA.get().endCallSilently(); } catch (Exception ignored) {}
+        }
+
+        AndroidDriver driverA = DeviceManager.getDriverA();
+        AndroidDriver driverB = DeviceManager.getDriverB();
+
+        if (driverA != null) {
+            terminateAppSafely(driverA);
+            String udidA = getUdidFromDriver(driverA);
+            ensureWifiEnabled(udidA);
+        }
+
+        if (driverB != null) {
+            terminateAppSafely(driverB);
+            String udidB = getUdidFromDriver(driverB);
+            ensureWifiEnabled(udidB);
+        }
+
+        callA.remove();
+        callB.remove();
     }
 
     @AfterClass(alwaysRun = true)
     public void tearDown() {
         logger.info("🛑 Destroying active driver sessions...");
-        quitDriverSafely(DeviceManager.getDriverA());
-        quitDriverSafely(DeviceManager.getDriverB());
+        if (DeviceManager.getDriverA() != null) {
+            quitDriverSafely(DeviceManager.getDriverA());
+        }
+        if (DeviceManager.getDriverB() != null) {
+            quitDriverSafely(DeviceManager.getDriverB());
+        }
         DeviceManager.clear();
 
         logger.info("Shutting down Appium server...");
         stopAppiumServer();
+    }
+
+    private String getUdidFromDriver(AndroidDriver driver) {
+        try {
+            Object udidObj = driver.getCapabilities().getCapability("udid");
+            return udidObj != null ? udidObj.toString() : null;
+        } catch (Exception e) {
+            logger.warn("Could not extract UDID from active driver session: {}", e.getMessage());
+            return null;
+        }
     }
 
     private void launchApp(AndroidDriver driver) {
@@ -165,13 +217,32 @@ public class BaseTest {
         }
     }
 
-    protected boolean isUserAlreadyLoggedIn(AndroidDriver driver) {
+    private void ensureWifiEnabled(String udid) {
+        if (udid == null || udid.isBlank()) return;
+        if (!isWifiEnabled(udid)) {
+            logger.warn("WiFi left disabled on device {} after test. Re-enabling.", udid);
+            executeCommand("adb", "-s", udid, "shell", "svc", "wifi", "enable");
+        }
+    }
+
+    private boolean isWifiEnabled(String udid) {
         try {
-            WebDriverWait quickWait = new WebDriverWait(driver, Duration.ofSeconds(4));
-            quickWait.until(ExpectedConditions.visibilityOfElementLocated(ElementRegistry.get(ElementKey.SEARCHBAR)));
-            return true;
+            Process process = new ProcessBuilder("adb", "-s", udid, "shell", "settings", "get", "global", "wifi_on")
+                    .redirectErrorStream(true)
+                    .start();
+            boolean finished = process.waitFor(ADB_COMMAND_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            if (!finished) {
+                process.destroyForcibly();
+                logger.warn("Timed out checking WiFi state on device {}", udid);
+                return true;
+            }
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String output = reader.readLine();
+                return "1".equals(output == null ? "" : output.trim());
+            }
         } catch (Exception e) {
-            return false;
+            logger.warn("Could not check WiFi state on device {}: {}", udid, e.getMessage());
+            return true;
         }
     }
 
@@ -253,6 +324,6 @@ public class BaseTest {
             appiumServer.stop();
             logger.info("🛑 Appium Server stopped.");
         }
-        appiumServer = null; // critical: allows a fresh server for the next test class
+        appiumServer = null;
     }
 }

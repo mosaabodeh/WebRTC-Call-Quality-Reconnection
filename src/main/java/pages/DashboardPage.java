@@ -29,7 +29,8 @@ public class DashboardPage extends BasePage {
     public void videoCallContact(String contactName){
        searchForContact(contactName);
         clickCallButton();
+        clickIfElementAppears(ElementRegistry.get(ElementKey.ALLOW_ACCESS_CAMERA));
        click(ElementRegistry.get(ElementKey.VIDEO_CALL_BUTTON));
-       clickIfElementAppears(ElementRegistry.get(ElementKey.ALLOW_ACCESS_CAMERA));
+
    }
 }
