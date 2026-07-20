@@ -91,6 +91,8 @@ public class WebRtcCallTest extends BaseTest {
 
         Assert.assertTrue(statusA.toLowerCase().contains("outgoing call") || !statusA.isEmpty(), "Active details invalid on Device A.");
         Assert.assertTrue(statusB.toLowerCase().contains("incoming call") || !statusB.isEmpty(), "Active details invalid on Device B.");
+       // dashboardAInstance.addParticipantToCall(nameC);
+
     }
 
     @Test(priority = 2, description = "user should be able to accept the incoming call successfully")

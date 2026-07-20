@@ -82,6 +82,7 @@ public class CallPage extends BasePage {
             System.out.println("⚠️ Neither status appeared within the timeout period. Error: " + e.getMessage());
         }
     }
+
     public void endCallSilently() {
         try {
             org.openqa.selenium.By hangUpBtnCriteria = ElementRegistry.get(ElementKey.HANG_UP_BUTTON);

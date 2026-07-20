@@ -70,6 +70,12 @@ public class ElementRegistry {
                By.id("com.ale.rainbow:id/buttonAddVideo"));
         mobile.put(ElementKey.ALLOW_ACCESS_CAMERA,
                 By.id("com.ale.rainbow:id/buttonAddVideo"));
+        mobile.put(ElementKey.ADD_PARTICIPANTS_BUTTON,
+                By.id("Add participants"));
+        mobile.put(
+                ElementKey.CALL_PARTICIPANT_OPTION_BUTTON,
+                AppiumBy.androidUIAutomator("new UiSelector().className(\"android.widget.LinearLayout\").instance(0)")
+        );
         mobile.put(
                 ElementKey.EMAIL_FIELD,
                 AppiumBy.androidUIAutomator("new UiSelector().className(\"android.widget.EditText\").instance(0)")
