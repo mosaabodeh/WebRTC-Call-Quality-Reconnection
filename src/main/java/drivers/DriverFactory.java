@@ -47,6 +47,7 @@ public class DriverFactory {
 
                 .amend("appium:skipServerCleanup", false)
                 .amend("appium:shouldTerminateApp", true)
+
                 .setNoReset(Boolean.parseBoolean(ConfigReader.getProperty("appium.noReset", "true")))
                 .setFullReset(Boolean.parseBoolean(ConfigReader.getProperty("appium.fullReset", "false")));
     }

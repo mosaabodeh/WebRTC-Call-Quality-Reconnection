@@ -4,41 +4,46 @@ import io.appium.java_client.android.AndroidDriver;
 
 public class DeviceManager {
 
-    private static  AndroidDriver driverA;
-    private static  AndroidDriver driverB;
+    private static final ThreadLocal<AndroidDriver> driverA = new ThreadLocal<>();
+    private static final ThreadLocal<AndroidDriver> driverB = new ThreadLocal<>();
 
-    public static synchronized void setDriverA(AndroidDriver driver) {
-        driverA = driver;
+    public static AndroidDriver getDriverA() {
+        return driverA.get();
     }
 
-    public static synchronized void setDriverB(AndroidDriver driver) {
-        driverB = driver;
+    public static void setDriverA(AndroidDriver driver) {
+        driverA.set(driver);
     }
 
-    public static synchronized AndroidDriver getDriverA() {
-        return driverA;
+    public static AndroidDriver getDriverB() {
+        return driverB.get();
     }
 
-    public static synchronized AndroidDriver getDriverB() {
-        return driverB;
+    public static void setDriverB(AndroidDriver driver) {
+        driverB.set(driver);
     }
 
-    public static synchronized void clear() {
-        driverA = null;
-        driverB = null;
+    public static void clear() {
+        driverA.remove();
+        driverB.remove();
     }
 
-    public static synchronized void unload() {
-        if (driverA != null) {
-            try {
-                driverA.quit();
-            } catch (Exception ignored) {}
+    public static void unload() {
+        quitSafely(driverA);
+        quitSafely(driverB);
+    }
+
+    private static void quitSafely(ThreadLocal<AndroidDriver> driverThreadLocal) {
+        AndroidDriver driver = driverThreadLocal.get();
+        try {
+            if (driver != null) {
+                System.out.println("Quitting active session for thread: " + Thread.currentThread().getName());
+                driver.quit();
+            }
+        } catch (Exception e) {
+            System.err.println("[DeviceManager] Failed to quit driver safely: " + e.getMessage());
+        } finally {
+            driverThreadLocal.remove();
         }
-        if (driverB != null) {
-            try {
-                driverB.quit();
-            } catch (Exception ignored) {}
-        }
-        clear();
     }
 }

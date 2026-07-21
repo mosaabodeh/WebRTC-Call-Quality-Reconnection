@@ -31,9 +31,8 @@ public class BaseTest {
     protected static AppiumDriverLocalService appiumServer;
     private static String appPackage;
 
-    // ThreadLocal isolation for page object context mapping
-    protected static final ThreadLocal<CallPage> callA = new ThreadLocal<>();
-    protected static final ThreadLocal<CallPage> callB = new ThreadLocal<>();
+    protected final ThreadLocal<CallPage> callA = new ThreadLocal<>();
+    protected final ThreadLocal<CallPage> callB = new ThreadLocal<>();
 
     @BeforeClass
     public void setUpDevices() {
@@ -74,35 +73,37 @@ public class BaseTest {
 
         List<CompletableFuture<AndroidDriver>> activeFutures = new ArrayList<>();
 
+        CompletableFuture<AndroidDriver> futureA = null;
+        CompletableFuture<AndroidDriver> futureB = null;
+
         if (isAActive) {
             DeviceConfig configA = allConfigs.stream().filter(c -> c.label().equals("A")).findFirst().orElseThrow();
-            CompletableFuture<AndroidDriver> futureA = initializeDevice(configA, serverUrl, implicitWait, 0);
-
-            futureA.whenComplete((driver, ex) -> {
-                if (driver != null) {
-                    DeviceManager.setDriverA(driver);
-                    logger.info("Device A registered successfully in DeviceManager.");
-                }
-            });
+            futureA = initializeDevice(configA, serverUrl, implicitWait, 0);
             activeFutures.add(futureA);
         }
 
         if (isBActive) {
             DeviceConfig configB = allConfigs.stream().filter(c -> c.label().equals("B")).findFirst().orElseThrow();
             long delay = isAActive ? staggerMs : 0;
-            CompletableFuture<AndroidDriver> futureB = initializeDevice(configB, serverUrl, implicitWait, delay);
-            futureB.whenComplete((driver, ex) -> {
-                if (driver != null) {
-                    DeviceManager.setDriverB(driver);
-                    logger.info("Device B registered successfully in DeviceManager.");
-                }
-            });
+            futureB = initializeDevice(configB, serverUrl, implicitWait, delay);
             activeFutures.add(futureB);
         }
 
         try {
             CompletableFuture.allOf(activeFutures.toArray(new CompletableFuture[0]))
                     .get(bootTimeoutSec, TimeUnit.SECONDS);
+
+            // We're back on the @BeforeClass thread here (allOf().get() blocks
+            // and returns control to the calling thread) — safe to register.
+            if (futureA != null) {
+                DeviceManager.setDriverA(futureA.join());
+                logger.info("Device A registered successfully in DeviceManager.");
+            }
+            if (futureB != null) {
+                DeviceManager.setDriverB(futureB.join());
+                logger.info("Device B registered successfully in DeviceManager.");
+            }
+
             logger.info("Connected devices registered successfully! Test suite ready.");
         } catch (Exception e) {
             logger.error("Device startup sequence failed. Aborting test execution.", e);
@@ -113,7 +114,6 @@ public class BaseTest {
 
     @BeforeMethod
     public void startAppBeforeTest() {
-        logger.info("Ensuring application is launched in foreground and preparing localized page instances...");
 
         AndroidDriver driverA = DeviceManager.getDriverA();
         AndroidDriver driverB = DeviceManager.getDriverB();

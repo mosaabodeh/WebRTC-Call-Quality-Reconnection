@@ -42,9 +42,11 @@ public class WebRtcCallTest extends BaseTest {
 
         List<CompletableFuture<Void>> loginTasks = new ArrayList<>();
 
+        // 2. Pass local driver variables directly into the async tasks
         if (driverA != null) {
+            final AndroidDriver localDriverA = driverA;
             loginTasks.add(CompletableFuture.runAsync(() -> {
-                LoginPage loginPageA = new LoginPage(driverA);
+                LoginPage loginPageA = new LoginPage(localDriverA);
                 if (!loginPageA.isUserAlreadyLoggedIn()) {
                     System.out.println("🔐 Device A is not logged in. Initiating login procedure...");
                     loginPageA.login(emailA, passwordA);
@@ -53,8 +55,9 @@ public class WebRtcCallTest extends BaseTest {
         }
 
         if (driverB != null) {
+            final AndroidDriver localDriverB = driverB;
             loginTasks.add(CompletableFuture.runAsync(() -> {
-                LoginPage loginPageB = new LoginPage(driverB);
+                LoginPage loginPageB = new LoginPage(localDriverB);
                 if (!loginPageB.isUserAlreadyLoggedIn()) {
                     System.out.println("🔐 Device B is not logged in. Initiating login procedure...");
                     loginPageB.login(emailB, passwordB);
@@ -62,6 +65,7 @@ public class WebRtcCallTest extends BaseTest {
             }));
         }
 
+        // 3. Block until both login procedures complete
         if (!loginTasks.isEmpty()) {
             CompletableFuture.allOf(loginTasks.toArray(new CompletableFuture[0])).join();
         }
