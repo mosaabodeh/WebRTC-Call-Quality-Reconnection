@@ -72,7 +72,6 @@ public class WebRtcCallTest extends BaseTest {
         if (!loginTasks.isEmpty()) {
             CompletableFuture.allOf(loginTasks.toArray(new CompletableFuture[0])).join();
         }
-
         dashboardAInstance = (driverA != null) ? new DashboardPage(driverA) : new DashboardPage(driverB);
     }
 
