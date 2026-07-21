@@ -43,7 +43,6 @@ public class WebRtcCallTest extends BaseTest {
         if (driverA == null && driverB == null) {
             throw new IllegalStateException("❌ No devices are connected in the current thread context.");
         }
-
         List<CompletableFuture<Void>> loginTasks = new ArrayList<>();
 
         // 2. Pass local driver variables directly into the async tasks
@@ -95,8 +94,8 @@ public class WebRtcCallTest extends BaseTest {
         String statusA = callA.get().getCallStatus();
         String statusB = callB.get().getCallStatus();
 
-        Assert.assertTrue(statusA.toLowerCase().contains("outgoing call") || !statusA.isEmpty(), "Active details invalid on Device A.");
-        Assert.assertTrue(statusB.toLowerCase().contains("incoming call") || !statusB.isEmpty(), "Active details invalid on Device B.");
+        Assert.assertTrue(statusA.toLowerCase().contains("outgoing call") , "Active details invalid on Device A.");
+        Assert.assertTrue(statusB.toLowerCase().contains("incoming call") , "Active details invalid on Device B.");
        // dashboardAInstance.addParticipantToCall(nameC);
 
     }
