@@ -7,6 +7,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import pages.LoginPage;
 import pages.DashboardPage;
+import utils.ConfigReader;
 import utils.JsonReader;
 
 import java.util.ArrayList;
@@ -20,6 +21,7 @@ public class WebRtcCallTest extends BaseTest {
     private String emailB;
     private String passwordB;
     private String nameB;
+    private String udidB;
 
     private DashboardPage dashboardAInstance;
 
@@ -30,6 +32,8 @@ public class WebRtcCallTest extends BaseTest {
         emailB = JsonReader.getTestData("LoginData.json", "UserB", "email");
         passwordB = JsonReader.getTestData("LoginData.json", "UserB", "password");
         nameB = JsonReader.getTestData("LoginData.json", "UserB", "Name");
+        udidB = ConfigReader.getProperty("device.b.udid");
+
     }
 
     private void establishBaseCall() {
@@ -124,14 +128,14 @@ public class WebRtcCallTest extends BaseTest {
 
         try {
             System.out.println("🔌 Turning OFF Wi-Fi on Device B...");
-            callB.get().toggleWifi("R5CTA2QC6BA", false);
+            callB.get().toggleWifi(udidB, false);
 
             String statusB = callB.get().getCallStatus();
             Assert.assertTrue(statusB.toLowerCase().contains("connection in progress"),
                     "connection in progress status not displayed on Device B. Found: " + statusB);
 
             System.out.println("📶 Restoring Wi-Fi on Device B...");
-            callB.get().toggleWifi("R5CTA2QC6BA", true);
+            callB.get().toggleWifi(udidB, true);
 
             String statusAAfterRestore = callA.get().getCallStatus();
             Assert.assertTrue(callA.get().isCallTimerTicking(),

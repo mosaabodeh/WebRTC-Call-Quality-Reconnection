@@ -62,7 +62,7 @@ public class CallPage extends BasePage {
             String[] command = {"adb", "-s", deviceId, "shell", "cmd", "wifi", "set-wifi-enabled", state};
 
             process = Runtime.getRuntime().exec(command);
-            process.waitFor(1005, TimeUnit.MILLISECONDS);
+            process.waitFor(505, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             System.err.println("⚠️ WiFi Toggle Command failed: " + e.getMessage());
         } finally {

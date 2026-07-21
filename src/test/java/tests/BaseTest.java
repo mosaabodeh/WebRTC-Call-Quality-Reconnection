@@ -3,6 +3,7 @@ package tests;
 import drivers.DeviceManager;
 import drivers.DriverFactory;
 import drivers.DriverFactory.DeviceConfig;
+import drivers.NetworkHelper;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.service.local.AppiumDriverLocalService;
 import io.appium.java_client.service.local.AppiumServiceBuilder;
@@ -27,9 +28,9 @@ import java.util.concurrent.TimeUnit;
 public class BaseTest {
 
     private static final Logger logger = LoggerFactory.getLogger(BaseTest.class);
-    private static final int ADB_COMMAND_TIMEOUT_SECONDS = 5;
     protected static AppiumDriverLocalService appiumServer;
     private static String appPackage;
+    NetworkHelper helperMethodeNetwork= new NetworkHelper();
 
     protected final ThreadLocal<CallPage> callA = new ThreadLocal<>();
     protected final ThreadLocal<CallPage> callB = new ThreadLocal<>();
@@ -58,7 +59,7 @@ public class BaseTest {
                 .forEach(c -> logger.warn("Device {} ({}) is configured but NOT physically connected. Skipping.", c.label(), c.udid()));
 
         logger.info("Running pre-test port and device cleanup for connected devices...");
-        activeConfigs.parallelStream().forEach(c -> cleanDevicePorts(c.udid()));
+        activeConfigs.parallelStream().forEach(c -> helperMethodeNetwork.cleanDevicePorts(c.udid()));
 
         startAppiumServer();
 
@@ -155,7 +156,7 @@ public class BaseTest {
                 try {
                     terminateAppSafely(driverA);
                     String udidA = getUdidFromDriver(driverA);
-                    ensureWifiEnabled(udidA);
+                    helperMethodeNetwork.ensureWifiEnabled(udidA);
                 } catch (Exception e) {
                     logger.warn("Error during Device A cleanup thread: {}", e.getMessage());
                 }
@@ -167,7 +168,7 @@ public class BaseTest {
                 try {
                     terminateAppSafely(driverB);
                     String udidB = getUdidFromDriver(driverB);
-                    ensureWifiEnabled(udidB);
+                    helperMethodeNetwork.ensureWifiEnabled(udidB);
                 } catch (Exception e) {
                     logger.warn("Error during Device B cleanup thread: {}", e.getMessage());
                 }
@@ -243,34 +244,7 @@ public class BaseTest {
         }
     }
 
-    private void ensureWifiEnabled(String udid) {
-        if (udid == null || udid.isBlank()) return;
-        if (!isWifiEnabled(udid)) {
-            logger.warn("WiFi left disabled on device {} after test. Re-enabling.", udid);
-            executeCommand("adb", "-s", udid, "shell", "svc", "wifi", "enable");
-        }
-    }
 
-    private boolean isWifiEnabled(String udid) {
-        try {
-            Process process = new ProcessBuilder("adb", "-s", udid, "shell", "settings", "get", "global", "wifi_on")
-                    .redirectErrorStream(true)
-                    .start();
-            boolean finished = process.waitFor(ADB_COMMAND_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-            if (!finished) {
-                process.destroyForcibly();
-                logger.warn("Timed out checking WiFi state on device {}", udid);
-                return true;
-            }
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                String output = reader.readLine();
-                return "1".equals(output == null ? "" : output.trim());
-            }
-        } catch (Exception e) {
-            logger.warn("Could not check WiFi state on device {}: {}", udid, e.getMessage());
-            return true;
-        }
-    }
 
     private List<String> getPhysicallyConnectedDevices() {
         List<String> connectedUdids = new ArrayList<>();
@@ -312,28 +286,9 @@ public class BaseTest {
         }, executor);
     }
 
-    private void cleanDevicePorts(String udid) {
-        if (udid == null || udid.isBlank()) return;
-        logger.debug("Clearing ADB forwards & killing orphaned servers on: {}", udid);
-        executeCommand("adb", "-s", udid, "forward", "--remove-all");
-        executeCommand("adb", "-s", udid, "shell", "am", "force-stop", "io.appium.uiautomator2.server");
-        executeCommand("adb", "-s", udid, "shell", "am", "force-stop", "io.appium.uiautomator2.server.test");
-    }
 
-    private void executeCommand(String... command) {
-        try {
-            Process process = new ProcessBuilder(command).redirectErrorStream(true).start();
-            boolean finished = process.waitFor(ADB_COMMAND_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-            if (!finished) {
-                process.destroyForcibly();
-                logger.warn("Command timed out and was killed: {}", String.join(" ", command));
-            } else if (process.exitValue() != 0) {
-                logger.debug("Command exited with {}: {}", process.exitValue(), String.join(" ", command));
-            }
-        } catch (Exception e) {
-            logger.warn("Non-fatal error executing command [{}]: {}", String.join(" ", command), e.getMessage());
-        }
-    }
+
+
 
     protected void startAppiumServer() {
         if (appiumServer == null) {
