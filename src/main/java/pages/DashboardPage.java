@@ -28,7 +28,7 @@ public class DashboardPage extends BasePage {
     public void callContact(String contactName) {
         searchForUserAndClickCallButton(contactName);
         clickIfElementAppears(ElementRegistry.get(ElementKey.ALLOW_BUTTON));
-        click(ElementRegistry.get(ElementKey.AUDIO_CALL_BUTTON));
+        waitClickable(ElementRegistry.get(ElementKey.AUDIO_CALL_BUTTON)).click();
     }
     public void videoCallContact(String contactName){
         searchForUserAndClickCallButton(contactName);

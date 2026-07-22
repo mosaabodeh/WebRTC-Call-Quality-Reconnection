@@ -65,8 +65,8 @@ public class BaseTest {
 
         final URL serverUrl = appiumServer.getUrl();
         final Duration implicitWait = Duration.ofSeconds(
-                Long.parseLong(ConfigReader.getProperty("implicit.wait", "10")));
-        final long staggerMs = Long.parseLong(ConfigReader.getProperty("device.init.staggerMs", "4000"));
+                Long.parseLong(ConfigReader.getProperty("implicit.wait", "0")));
+        final long staggerMs = Long.parseLong(ConfigReader.getProperty("device.init.staggerMs", "3000"));
         final long bootTimeoutSec = Long.parseLong(ConfigReader.getProperty("device.init.timeoutSeconds", "60"));
 
         boolean isAActive = activeConfigs.stream().anyMatch(c -> c.label().equals("A"));
@@ -94,8 +94,6 @@ public class BaseTest {
             CompletableFuture.allOf(activeFutures.toArray(new CompletableFuture[0]))
                     .get(bootTimeoutSec, TimeUnit.SECONDS);
 
-            // We're back on the @BeforeClass thread here (allOf().get() blocks
-            // and returns control to the calling thread) — safe to register.
             if (futureA != null) {
                 DeviceManager.setDriverA(futureA.join());
                 logger.info("Device A registered successfully in DeviceManager.");
@@ -160,7 +158,7 @@ public class BaseTest {
                 } catch (Exception e) {
                     logger.warn("Error during Device A cleanup thread: {}", e.getMessage());
                 }
-            }).orTimeout(7, TimeUnit.SECONDS));
+            }).orTimeout(5, TimeUnit.SECONDS));
         }
 
         if (driverB != null) {
@@ -178,7 +176,7 @@ public class BaseTest {
         if (!cleanupTasks.isEmpty()) {
             try {
                 CompletableFuture.allOf(cleanupTasks.toArray(new CompletableFuture[0]))
-                        .get(10, TimeUnit.SECONDS);
+                        .get(7, TimeUnit.SECONDS);
             } catch (Exception e) {
                 logger.warn("Some cleanup tasks timed out or failed, forcing continuation: {}", e.getMessage());
             }
@@ -267,6 +265,7 @@ public class BaseTest {
         return connectedUdids;
     }
 
+
     private CompletableFuture<AndroidDriver> initializeDevice(DeviceConfig config, URL serverUrl,
                                                               Duration implicitWait, long startDelayMs) {
         var executor = startDelayMs > 0
@@ -285,10 +284,6 @@ public class BaseTest {
             }
         }, executor);
     }
-
-
-
-
 
     protected void startAppiumServer() {
         if (appiumServer == null) {

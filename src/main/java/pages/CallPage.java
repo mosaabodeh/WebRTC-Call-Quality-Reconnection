@@ -2,14 +2,22 @@ package pages;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.android.connection.ConnectionStateBuilder;
+import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebElement;
 
+import org.openqa.selenium.support.ui.FluentWait;
 import pages.locators.ElementKey;
 import pages.locators.ElementRegistry;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
 
 public class CallPage extends BasePage {
 
@@ -20,8 +28,11 @@ public class CallPage extends BasePage {
 
     public void acceptIncomingCall() {
         waitClickable(ElementRegistry.get(ElementKey.ACCEPT_CALL_BUTTON)).click();
-
     }
+    public void clickAudioCall() {
+        waitClickable(ElementRegistry.get(ElementKey.AUDIO_CALL_BUTTON)).click();
+    }
+
     public void acceptIncomingVideoCall() {
         waitClickable(ElementRegistry.get(ElementKey.ANSWER_VIDEO)).click();
     }
@@ -55,26 +66,45 @@ public class CallPage extends BasePage {
             return "";
         }
     }
-    public static void toggleWifi(String deviceId, boolean turnOn) {
-        Process process = null;
-        try {
-            String state = turnOn ? "enabled" : "disabled";
-            String[] command = {"adb", "-s", deviceId, "shell", "cmd", "wifi", "set-wifi-enabled", state};
 
-            process = Runtime.getRuntime().exec(command);
-            process.waitFor(505, TimeUnit.MILLISECONDS);
-        } catch (Exception e) {
-            System.err.println("⚠️ WiFi Toggle Command failed: " + e.getMessage());
-        } finally {
-            if (process != null) {
-                process.destroyForcibly();
-                try {
-                 process.getInputStream().close();
-                 process.getOutputStream().close();
-                 process.getErrorStream().close();
-                }
-                catch (Exception ignored) {}
+    public static boolean toggleWifi(String deviceId, boolean turnOn) {
+        String state = turnOn ? "enable" : "disable";
+        String[] command = {"adb", "-s", deviceId, "shell", "svc", "wifi", state};
+
+        try {
+            Process process = new ProcessBuilder(command)
+                    .redirectErrorStream(true)
+                    .start();
+
+            String output;
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+                output = reader.lines().collect(Collectors.joining("\n"));
             }
+
+            boolean finished = process.waitFor(5, TimeUnit.SECONDS);
+            if (!finished) {
+                process.destroyForcibly();
+                System.out.println("WiFi toggle command timed out for device {}"+ deviceId);
+                return false;
+            }
+
+            int exitCode = process.exitValue();
+            if (exitCode != 0) {
+                System.out.println("WiFi toggle failed on {} (exit={}): {}"+ deviceId+ exitCode+ output);
+                return false;
+            }
+
+            System.out.println("WiFi state changed to '{}' on {}"+ state+ deviceId);
+            return true;
+
+        } catch (IOException e) {
+            System.out.println("ADB connection issue while toggling WiFi on {}: {}"+ deviceId+ e.getMessage());
+            return false;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            System.out.println("WiFi toggle interrupted for device {}"+ deviceId+ e);
+            return false;
         }
     }
 
@@ -91,6 +121,37 @@ public class CallPage extends BasePage {
         }
     }
 
+
+    public void clickAnswer() {
+        driver.findElement(By.id("com.ale.rainbow:id/button_answer")).click();
+    }
+    public void answerCallAndConfirmStable() {
+        clickAnswer();
+
+        boolean transitioned = new FluentWait<>(driver)
+                .withTimeout(Duration.ofSeconds(8))
+                .pollingEvery(Duration.ofMillis(250))
+                .ignoring(NoSuchElementException.class)
+                .until(d -> {
+                    String status = getCallStatus();
+                    return status != null && !status.equalsIgnoreCase("Incoming Call");
+                });
+
+        if (!transitioned) {
+            String appState = queryAppState("com.ale.rainbow");
+            throw new AssertionError(
+                    "Call never left 'Incoming Call' state after accept click. "
+                            + "App state at failure: " + appState
+                            + " (4=foreground, 3=background, 1=not running — a value other than 4 means the app died/crashed)"
+            );
+        }
+    }
+
+    private String queryAppState( String appId) {
+        Object result = driver.executeScript("mobile: queryAppState",
+                Collections.singletonMap("appId", appId));
+        return String.valueOf(result);
+    }
     public void rejectIncomingCall() {
       waitClickable ( ElementRegistry.get(ElementKey.REJECT_CALL_BUTTON)).click();
     }

@@ -7,48 +7,37 @@ import utils.ConfigReader;
 import java.net.URL;
 import java.time.Duration;
 
-
 public class DriverFactory {
 
-    public record DeviceConfig(String label, String udid, int systemPort,
-                               int chromedriverPort, int mjpegServerPort) {}
+    public record DeviceConfig(String label, String udid, String systemPort) {}
 
     public static DeviceConfig loadConfig(String label) {
-        return new DeviceConfig(
-                label,
-                ConfigReader.getProperty("device." + label.toLowerCase() + ".udid"),
-                Integer.parseInt(ConfigReader.getProperty("device." + label.toLowerCase() + ".systemPort")),
-                Integer.parseInt(ConfigReader.getProperty("device." + label.toLowerCase() + ".chromedriverPort")),
-                Integer.parseInt(ConfigReader.getProperty("device." + label.toLowerCase() + ".mjpegPort")));
+        String udid = ConfigReader.getProperty("device." + label + ".udid");
+        String systemPort = ConfigReader.getProperty("device." + label + ".systemPort");
+        return new DeviceConfig(label, udid, systemPort);
     }
 
     public static AndroidDriver create(DeviceConfig config, URL serverUrl, Duration implicitWait) {
-        AndroidDriver driver = new AndroidDriver(serverUrl, buildOptions(config));
+        UiAutomator2Options options = new UiAutomator2Options();
+        options.setUdid(config.udid());
+        options.setSystemPort(Integer.parseInt(config.systemPort()));
+
+        String appPackage = ConfigReader.getProperty("app.package");
+        options.setAppPackage(appPackage);
+
+        String appActivity = ConfigReader.getProperty("app.activity");
+        if (appActivity != null && !appActivity.isEmpty()) {
+            options.setAppActivity(appActivity);
+        }
+
+        options.setCapability("appium:shouldTerminateApp", false);
+        options.setCapability("appium:noReset", true);
+        options.setCapability("appium:dontStopAppOnReset", true);
+        options.setCapability("appium:newCommandTimeout", 300);
+        options.setCapability("appium:autoGrantPermissions", true);
+
+        AndroidDriver driver = new AndroidDriver(serverUrl, options);
         driver.manage().timeouts().implicitlyWait(implicitWait);
         return driver;
-    }
-
-    public static UiAutomator2Options buildOptions(DeviceConfig config) {
-        String appPackage = ConfigReader.getProperty("app.package");
-
-        return new UiAutomator2Options()
-                .setUdid(config.udid())
-                .setAutomationName(ConfigReader.getProperty("automation.name", "UiAutomator2"))
-                .setAppPackage(appPackage)
-                .setAppActivity(ConfigReader.getProperty("app.activity"))
-                .setSystemPort(config.systemPort())
-                .setChromedriverPort(config.chromedriverPort())
-                .setMjpegServerPort(config.mjpegServerPort())
-                .setClearDeviceLogsOnStart(true)
-
-                .amend("appium:uiautomator2ServerInstallTimeout", 15000)
-                .amend("appium:adbExecTimeout", 10000)
-                .amend("appium:amStartAsHome", true)
-
-                .amend("appium:skipServerCleanup", false)
-                .amend("appium:shouldTerminateApp", true)
-
-                .setNoReset(Boolean.parseBoolean(ConfigReader.getProperty("appium.noReset", "true")))
-                .setFullReset(Boolean.parseBoolean(ConfigReader.getProperty("appium.fullReset", "false")));
     }
 }
