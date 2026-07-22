@@ -66,7 +66,7 @@ public class BaseTest {
         final URL serverUrl = appiumServer.getUrl();
         final Duration implicitWait = Duration.ofSeconds(
                 Long.parseLong(ConfigReader.getProperty("implicit.wait", "0")));
-        final long staggerMs = Long.parseLong(ConfigReader.getProperty("device.init.staggerMs", "3000"));
+        final long staggerMs = Long.parseLong(ConfigReader.getProperty("device.init.staggerMs", "4000"));
         final long bootTimeoutSec = Long.parseLong(ConfigReader.getProperty("device.init.timeoutSeconds", "60"));
 
         boolean isAActive = activeConfigs.stream().anyMatch(c -> c.label().equals("A"));
@@ -158,7 +158,7 @@ public class BaseTest {
                 } catch (Exception e) {
                     logger.warn("Error during Device A cleanup thread: {}", e.getMessage());
                 }
-            }).orTimeout(5, TimeUnit.SECONDS));
+            }).orTimeout(7, TimeUnit.SECONDS));
         }
 
         if (driverB != null) {
@@ -176,7 +176,7 @@ public class BaseTest {
         if (!cleanupTasks.isEmpty()) {
             try {
                 CompletableFuture.allOf(cleanupTasks.toArray(new CompletableFuture[0]))
-                        .get(7, TimeUnit.SECONDS);
+                        .get(10, TimeUnit.SECONDS);
             } catch (Exception e) {
                 logger.warn("Some cleanup tasks timed out or failed, forcing continuation: {}", e.getMessage());
             }
