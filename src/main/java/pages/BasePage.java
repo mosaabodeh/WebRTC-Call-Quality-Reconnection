@@ -1,15 +1,25 @@
 package pages;
 
+import io.appium.java_client.AppiumBy;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.HasOnScreenKeyboard;
 import io.appium.java_client.HidesKeyboard;
+import io.appium.java_client.android.AndroidDriver;
+import io.appium.java_client.android.nativekey.AndroidKey;
+import io.appium.java_client.android.nativekey.KeyEvent;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Dimension;
+import org.openqa.selenium.Point;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import utils.ConfigReader;
-
+import utils.ToastOcrHandler;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+
+import static pages.CallPage.WaiteForTime;
 
 public class BasePage {
 
@@ -29,11 +39,41 @@ public class BasePage {
             return false;
         }
     }
+    public void scrollToBottom() {
+        driver.findElement(AppiumBy.androidUIAutomator(
+                "new UiScrollable(new UiSelector().scrollable(true)).scrollToEnd(10)"
+        ));
+    }
+    public void returnToActiveCall() {
+        AndroidDriver androidDriver = (AndroidDriver) driver;
 
+        try {
+            androidDriver.openNotifications();
+            Thread.sleep(1500);
+            By callNotificationLocator = AppiumBy.xpath(
+                    "//*[@package='com.ale.rainbow' or contains(@text, 'Audio call') or contains(@text, 'Return to call')]"
+            );
+            WebElement notification = waitClickable(callNotificationLocator);
+            int centerX = notification.getLocation().getX() + (notification.getSize().getWidth() / 2);
+            int centerY = notification.getLocation().getY() + (notification.getSize().getHeight() / 2);
+            Map<String, Object> tapParams = new HashMap<>();
+            tapParams.put("x", centerX);
+            tapParams.put("y", centerY);
+            androidDriver.executeScript("mobile: clickGesture", tapParams);
+            Thread.sleep(1000);
+
+        } catch (Exception e) {
+            androidDriver.pressKey(new KeyEvent(AndroidKey.BACK));
+            throw new RuntimeException("Failed to click the active call notification.", e);
+        }
+    }
     protected WebElement waitVisible(By locator) {
         return wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
     }
-
+    public void clickNavigationBack() {
+        AndroidDriver androidDriver = (AndroidDriver) driver;
+        androidDriver.pressKey(new KeyEvent(AndroidKey.BACK));
+    }
     protected WebElement waitClickable(By locator) {
         return wait.until(ExpectedConditions.elementToBeClickable(locator));
     }
@@ -58,6 +98,75 @@ public class BasePage {
             System.out.println("ℹ️ System element did not appear. Proceeding execution context...");
         }
     }
+    public String getErrorMessage() {
+        try {
+            String toastText = ToastOcrHandler.captureAndReadToast(driver);
+            return toastText == null ? "" :
+                    toastText.toLowerCase()
+                            .replace("\r", " ")
+                            .replace("\n", " ")
+                            .replaceAll("\\s+", " ")
+                            .trim();
+        } catch (Exception e) {
+            System.out.println("⚠️ Mobile OCR error: " + e.getMessage());
+            return "";
+        }
+    }
+    public void clickJoinButton() {
+        Dimension size = driver.manage().window().getSize();
+
+        int x = (int) (size.width * 0.83);
+        int y = (int) (size.height * 0.135);
+
+        Map<String, Object> tapParams = new HashMap<>();
+        tapParams.put("x", x);
+        tapParams.put("y", y);
+
+        driver.executeScript("mobile: clickGesture", tapParams);
+        System.out.println("Clicked Join button at: X=" + x + ", Y=" + y);
+    }
+    public void clickButtonByCoordinates(By ele) {
+        WebElement clickedElementButton = driver.findElement(ele);
+
+        Point location = clickedElementButton.getLocation();
+        Dimension size = clickedElementButton.getSize();
+
+        int centerX = location.getX() + (size.getWidth() / 2);
+        int centerY = location.getY() + (size.getHeight() / 2);
+
+        System.out.println("Calculated Center X: " + centerX + " | Center Y: " + centerY);
+
+        Map<String, Object> tapParams = new HashMap<>();
+        tapParams.put("x", centerX);
+        tapParams.put("y", centerY);
+
+        driver.executeScript("mobile: clickGesture", tapParams);
+    }
+    public boolean isConferenceLocked() throws InterruptedException {
+        clickButtonByCoordinates(AppiumBy.androidUIAutomator("new UiSelector().text(\"LIVE\")"));
+        clickJoinButton();
+        WaiteForTime(1);
+        String res=getErrorMessage();
+        System.out.println("[" + res + "]");
+        return res.contains(
+                "this conference has been locked, you are not allowed to enter the meeting."
+        );
+    }
+
+    public String getToastMessage() {
+        By toastLocator = AppiumBy.xpath("//android.widget.Toast");
+
+        WebDriverWait shortWait = new WebDriverWait(driver, Duration.ofSeconds(5));
+        WebElement toastElement = shortWait.until(
+                ExpectedConditions.presenceOfElementLocated(toastLocator)
+        );
+        String toastText = toastElement.getText();
+        if (toastText == null || toastText.isEmpty()) {
+            toastText = toastElement.getAttribute("text");
+        }
+
+        return toastText;
+    }
 
     protected void hideKeyboardIfShown() {
         try {
@@ -77,3 +186,7 @@ public class BasePage {
         }
     }
 }
+
+
+
+

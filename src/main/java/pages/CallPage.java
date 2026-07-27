@@ -198,7 +198,7 @@ public class CallPage extends BasePage {
         try {
             isHangUpVisible = waitVisible(ElementRegistry.get(ElementKey.HANG_UP_BUTTON)).isDisplayed();
             isNetworkQuilityAppear = waitVisible(ElementRegistry.get(ElementKey.QUALITY_SIGN)).isDisplayed();
-            isMoreOptionVisible = waitVisible(ElementRegistry.get(ElementKey.MOREOPTION)).isDisplayed();
+            isMoreOptionVisible = waitVisible(ElementRegistry.get(ElementKey.MORE_OPTION)).isDisplayed();
         } catch (Exception e) {
             isHangUpVisible = false;
             isNetworkQuilityAppear = false;
@@ -208,7 +208,6 @@ public class CallPage extends BasePage {
         return !isHangUpVisible && !isNetworkQuilityAppear && !isMoreOptionVisible;
 
     }
-
     public boolean isNetworkAppear() {
     return isDisplayed(ElementRegistry.get(ElementKey.QUALITY_SIGN));
     }

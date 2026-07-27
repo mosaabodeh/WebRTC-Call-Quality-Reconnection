@@ -12,8 +12,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.*;
 
-import pages.CallPage;
+import pages.*;
 import utils.ConfigReader;
+import utils.JsonReader;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -34,6 +35,16 @@ public class BaseTest {
 
     protected final ThreadLocal<CallPage> callA = new ThreadLocal<>();
     protected final ThreadLocal<CallPage> callB = new ThreadLocal<>();
+    ConferencePage conA ;
+    ConferencePage conB ;
+    RaseHandPage resA;
+    RaseHandPage rasB;
+    TalkingTimePage talkA;
+
+
+    ChromeNavigationUtils chromeNavigation;
+    protected String emailA, passwordA, emailB, passwordB, nameB,nameC, udidB;
+    protected DashboardPage dashboardAInstance;
 
     @BeforeClass
     public void setUpDevices() {
@@ -130,6 +141,59 @@ public class BaseTest {
         }
     }
 
+    @BeforeMethod
+    public void loadCommonTestData() {
+        emailA = JsonReader.getTestData("LoginData.json", "UserA", "email");
+        passwordA = JsonReader.getTestData("LoginData.json", "UserA", "password");
+        emailB = JsonReader.getTestData("LoginData.json", "UserB", "email");
+        passwordB = JsonReader.getTestData("LoginData.json", "UserB", "password");
+        nameB = JsonReader.getTestData("LoginData.json", "UserB", "Name");
+        nameC = JsonReader.getTestData("LoginData.json", "UserA", "Name");
+
+
+        udidB = ConfigReader.getProperty("device.B.udid");
+    }
+
+    protected void establishBaseCall() {
+        AndroidDriver driverA = DeviceManager.getDriverA();
+        AndroidDriver driverB = DeviceManager.getDriverB();
+
+        if (driverA == null || driverB == null) {
+            throw new IllegalStateException("❌ No devices are connected in the current thread context.");
+        }
+        conA=new ConferencePage(driverA);
+        conB=new ConferencePage(driverB);
+        resA=new RaseHandPage(driverA);
+        rasB=new RaseHandPage(driverB);
+        talkA=new TalkingTimePage(driverA);
+        chromeNavigation=new ChromeNavigationUtils(driverB);
+        List<CompletableFuture<Void>> loginTasks = new ArrayList<>();
+
+        loginTasks.add(CompletableFuture.runAsync(() -> {
+            LoginPage loginPageA = new LoginPage(driverA);
+            if (!loginPageA.isUserAlreadyLoggedIn()) {
+                logger.info("Device A is not logged in. Initiating login procedure...");
+                loginPageA.login(emailA, passwordA);
+            }
+        }));
+
+        loginTasks.add(CompletableFuture.runAsync(() -> {
+            LoginPage loginPageB = new LoginPage(driverB);
+            if (!loginPageB.isUserAlreadyLoggedIn()) {
+                logger.info("Device B is not logged in. Initiating login procedure...");
+                loginPageB.login(emailB, passwordB);
+            }
+        }));
+
+        CompletableFuture.allOf(loginTasks.toArray(new CompletableFuture[0])).join();
+        dashboardAInstance = new DashboardPage(driverA);
+    }
+
+    protected void audioCall() {
+        dashboardAInstance.callContact(nameB);
+        callB.get().answerCallAndConfirmStable();
+
+}
     @AfterMethod(alwaysRun = true)
     public void cleanUpAfterTestMethod() {
         logger.info("Test method execution finished. Resetting application states in parallel...");

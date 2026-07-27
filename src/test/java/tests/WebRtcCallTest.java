@@ -1,82 +1,9 @@
 package tests;
-
-import drivers.DeviceManager;
-import io.appium.java_client.android.AndroidDriver;
 import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import pages.LoginPage;
-import pages.DashboardPage;
-import utils.ConfigReader;
-import utils.JsonReader;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 public class WebRtcCallTest extends BaseTest {
 
-    private String emailA;
-    private String passwordA;
-    private String emailB;
-    private String passwordB;
-    private String nameB;
-    private String udidB;
-
-    private DashboardPage dashboardAInstance;
-
-    @BeforeMethod
-    public void setUpTestScenario() {
-        emailA = JsonReader.getTestData("LoginData.json", "UserA", "email");
-        passwordA = JsonReader.getTestData("LoginData.json", "UserA", "password");
-        emailB = JsonReader.getTestData("LoginData.json", "UserB", "email");
-        passwordB = JsonReader.getTestData("LoginData.json", "UserB", "password");
-        nameB = JsonReader.getTestData("LoginData.json", "UserB", "Name");
-        udidB = ConfigReader.getProperty("device.B.udid");
-
-    }
-
-    private void establishBaseCall() {
-        AndroidDriver driverA = DeviceManager.getDriverA();
-        AndroidDriver driverB = DeviceManager.getDriverB();
-
-        if (driverA == null || driverB == null) {
-            throw new IllegalStateException("❌ No devices are connected in the current thread context.");
-        }
-        List<CompletableFuture<Void>> loginTasks = new ArrayList<>();
-
-        if (driverA != null) {
-            final AndroidDriver localDriverA = driverA;
-            loginTasks.add(CompletableFuture.runAsync(() -> {
-                LoginPage loginPageA = new LoginPage(localDriverA);
-                if (!loginPageA.isUserAlreadyLoggedIn()) {
-                    System.out.println("🔐 Device A is not logged in. Initiating login procedure...");
-                    loginPageA.login(emailA, passwordA);
-                }
-            }));
-        }
-
-        if (driverB != null) {
-            final AndroidDriver localDriverB = driverB;
-            loginTasks.add(CompletableFuture.runAsync(() -> {
-                LoginPage loginPageB = new LoginPage(localDriverB);
-                if (!loginPageB.isUserAlreadyLoggedIn()) {
-                    System.out.println("🔐 Device B is not logged in. Initiating login procedure...");
-                    loginPageB.login(emailB, passwordB);
-                }
-            }));
-        }
-
-        if (!loginTasks.isEmpty()) {
-            CompletableFuture.allOf(loginTasks.toArray(new CompletableFuture[0])).join();
-        }
-        dashboardAInstance = (driverA != null) ? new DashboardPage(driverA) : new DashboardPage(driverB);
-    }
-
-    private void audioCall() {
-        dashboardAInstance.callContact(nameB);
-        callB.get().answerCallAndConfirmStable();
-    }
 
     @Test(priority = 1, description = "user should be able to see correct call status for receiving and outgoing calls")
     public void testBasicCallInitiationAndDetails() {
@@ -89,8 +16,6 @@ public class WebRtcCallTest extends BaseTest {
 
         Assert.assertTrue(statusA.toLowerCase().contains("outgoing call") , "Active details invalid on Device A.");
         Assert.assertTrue(statusB.toLowerCase().contains("incoming call") , "Active details invalid on Device B.");
-        //dashboardAInstance.addParticipantToCall(nameC);
-
     }
 
     @Test(priority = 2, description = "user should be able to accept the incoming call successfully")
@@ -211,4 +136,5 @@ public class WebRtcCallTest extends BaseTest {
         Assert.assertTrue(callB.get().isCallEndedCleanly(), "Device B did not end the call cleanly.");
 
     }
+
 }

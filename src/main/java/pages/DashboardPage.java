@@ -1,6 +1,8 @@
 package pages;
 
+import io.appium.java_client.AppiumBy;
 import io.appium.java_client.AppiumDriver;
+import org.openqa.selenium.NoSuchElementException;
 import pages.locators.ElementKey;
 import pages.locators.ElementRegistry;
 
@@ -14,6 +16,10 @@ public class DashboardPage extends BasePage {
         click(ElementRegistry.get(ElementKey.SEARCHBAR));
         type(ElementRegistry.get(ElementKey.SEARCHBAR_Field), contactName);
         click(ElementRegistry.get(ElementKey.FIRST_Search_RESULT));
+    }
+    public void searchContact(String contactName){
+        type(ElementRegistry.get(ElementKey.SEARCHBAR_Field), contactName);
+        click(ElementRegistry.get(ElementKey.FIRST_SEARCH_CALL_RESULT));
     }
 
     public void clickCallButton(){
@@ -39,11 +45,10 @@ public class DashboardPage extends BasePage {
     public void addParticipantToCall(String userName){
         click(ElementRegistry.get(ElementKey.ADD_PARTICIPANTS_BUTTON));
         click(ElementRegistry.get(ElementKey.CALL_PARTICIPANT_OPTION_BUTTON));
-        searchForContact(userName);
-        click(ElementRegistry.get(ElementKey.CONTINUE_BUTTON));
-
-
+        searchContact(userName);
+        click(ElementRegistry.get(ElementKey.CONTINUE));
     }
+
 
 
 }
