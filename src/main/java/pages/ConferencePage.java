@@ -34,7 +34,6 @@ public class ConferencePage extends BasePage{
             return false;
         }
     }
-
     public void muteAllUsersInTheConference() {
         waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
         waitClickable(ElementRegistry.get(ElementKey.MUTE_ALL)).click();
