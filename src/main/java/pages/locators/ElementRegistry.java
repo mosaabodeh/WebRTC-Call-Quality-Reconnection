@@ -71,7 +71,7 @@ public class ElementRegistry {
         mobile.put(ElementKey.REMOTE_VIDEO_CONTAINER,
                 By.id(
                         "com.ale.rainbow:id/videoContainer"));//enable,display
-        mobile.put(ElementKey.SHARE_SCREEN_GRID,
+        mobile.put(ElementKey.SHARE_SCREEN_GRID,//enable ,display
                 By.id("com.ale.rainbow:id/surfaceview"));
         mobile.put(ElementKey.VIDEO_UPGRADE_BUTTON,
                By.id("com.ale.rainbow:id/buttonAddVideo"));
