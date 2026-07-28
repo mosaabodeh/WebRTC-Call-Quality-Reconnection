@@ -74,17 +74,44 @@ public class ConferencePage extends BasePage{
         System.out.println("The Result is : "+res);
         return res.contains("Grid view");
     }
-    public boolean recordWithTranscript(){
+    void openRecording(){
         waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
         waitClickable(ElementRegistry.get(ElementKey.RECODE_WITH_TRANSCRIPT)).click();
-        waitClickable(ElementRegistry.get(ElementKey.TRANSCRIPTION_SWITCH)).click();
-        waitClickable(ElementRegistry.get(ElementKey.SUMMARY_SWITCH)).click();
-        waitClickable(ElementRegistry.get(ElementKey.DELETE_RECORD_SWITCH)).click();
-        waitClickable(ElementRegistry.get(ElementKey.START_OK_APPLY)).click();
-       boolean flag= waitVisible(ElementRegistry.get(ElementKey.RECORD_INDICATOR)).isDisplayed();
-    String res=waitVisible(ElementRegistry.get(ElementKey.RECORD_INFORMATION_MESSAGE)).getText();
-    return res.contains("You have started a recording and a transcript. Make sure to inform all participants.")&&flag;
+    }
 
+    void enableTranscript(){
+        waitClickable(ElementRegistry.get(ElementKey.TRANSCRIPTION_SWITCH)).click();
+
+    }
+
+   void enableSummary(){
+       waitClickable(ElementRegistry.get(ElementKey.SUMMARY_SWITCH)).click();
+
+   }
+   void enableDelete(){
+       waitClickable(ElementRegistry.get(ElementKey.DELETE_RECORD_SWITCH)).click();
+
+   }
+
+    void startRecording(){
+        waitClickable(ElementRegistry.get(ElementKey.START_OK_APPLY)).click();
+    }
+
+    boolean isRecordingStarted(){
+        return waitVisible(ElementRegistry.get(ElementKey.RECORD_INDICATOR)).isDisplayed();
+   }
+
+   String getRecordingMessage(){
+       return waitVisible(ElementRegistry.get(ElementKey.RECORD_INFORMATION_MESSAGE)).getText();
+   }
+    public boolean recordWithTranscript(){
+        openRecording();
+        enableTranscript();
+        enableSummary();
+        enableDelete();
+        startRecording();
+    String res=getRecordingMessage();
+    return res.contains("You have started a recording and a transcript. Make sure to inform all participants.")&&isRecordingStarted();
     }
 
     public void stopRecording() {
@@ -112,29 +139,55 @@ public class ConferencePage extends BasePage{
         String res = getToastMessage();
         return flag && res.toLowerCase().contains("you have locked the meeting");
     }
-
+    public boolean isConferenceLocked() throws InterruptedException {
+        clickButtonByCoordinates(AppiumBy.androidUIAutomator("new UiSelector().text(\"LIVE\")"));
+        clickJoinButton();
+        WaiteForTime(1.5);
+        String res=getErrorMessage();
+        System.out.println("[" + res + "]");
+        return res.contains(
+                "this conference has been locked, you are not allowed to enter the meeting."
+        );
+    }
     public String verifySharingLinkStander(){
         waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
         waitClickable(ElementRegistry.get(ElementKey.MEETING_OPTION)).click();
         waitClickable(ElementRegistry.get(ElementKey.SHARE_BUTTON)).click();
         waitClickable(ElementRegistry.get(ElementKey.SHARE_LINK)).click();
         waitClickable(ElementRegistry.get(ElementKey.COPY_BUTTON)).click();
-        return DeviceManager.getDriverB().getClipboardText();
+        return DeviceManager.getDriverA().getClipboardText();
+    }
+   void openMeetingSettings(){
+       waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
+       waitClickable(ElementRegistry.get(ElementKey.MEETING_OPTION)).click();
+       waitClickable(ElementRegistry.get(ElementKey.SHARE_BUTTON)).click();
+       waitClickable(ElementRegistry.get(ElementKey.SHARE_WITH_EVERYONE)).click();
+   }
+
+   void enableWaitingRoom(){
+        waitClickable(ElementRegistry.get(ElementKey.WAITING_ROOM)).click();
+
+    }
+
+    void enablePassword(){
+        scrollToBottom();
+        waitClickable(ElementRegistry.get(ElementKey.ROOM_PASSWORD)).click();
+    }
+
+
+
+    void generatePassword(){
+        waitClickable(ElementRegistry.get(ElementKey.REGENERATE_NEW_PASSWORD)).click();
     }
     public String verifySharingBubbleWithCustomSetting(boolean WaitingRoom,boolean protectedWithPassword){
-        waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
-        waitClickable(ElementRegistry.get(ElementKey.MEETING_OPTION)).click();
-        waitClickable(ElementRegistry.get(ElementKey.SHARE_BUTTON)).click();
-        waitClickable(ElementRegistry.get(ElementKey.SHARE_WITH_EVERYONE)).click();
+        openMeetingSettings();
         if(WaitingRoom){
-            waitClickable(ElementRegistry.get(ElementKey.WAITING_ROOM)).click();
-        }
+            enableWaitingRoom();        }
         if(protectedWithPassword){
-            scrollToBottom();
-            waitClickable(ElementRegistry.get(ElementKey.ROOM_PASSWORD)).click();
+            enablePassword();
             scrollToBottom();
             String old=clickAndCopyPassword();
-            waitClickable(ElementRegistry.get(ElementKey.REGENERATE_NEW_PASSWORD)).click();
+            generatePassword();
             String newPass=clickAndCopyPassword();
             if(old.equals(newPass)) System.out.println("The Password change result is : "+false);
             System.out.println("The Password change result is : "+true);
@@ -148,7 +201,7 @@ public class ConferencePage extends BasePage{
         System.out.println(actualClipboardText);
         return actualClipboardText;
     }
-    public void verifyBasicMeetingOption(boolean muteWhenEnter, boolean playSound)  {
+    public void configureMeetingOptions(boolean muteWhenEnter, boolean playSound)  {
         waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
         waitClickable(ElementRegistry.get(ElementKey.MEETING_OPTION)).click();
 
@@ -165,7 +218,7 @@ public class ConferencePage extends BasePage{
         }
     }
 
-    public boolean assertMeetingOptions(boolean expectedMute, boolean expectedPlaySound) {
+    public boolean areMeetingOptionsApplied(boolean expectedMute, boolean expectedPlaySound) {
         waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
         waitClickable(ElementRegistry.get(ElementKey.MEETING_OPTION)).click();
 
@@ -183,11 +236,14 @@ public class ConferencePage extends BasePage{
 
         clickButtonByCoordinates(AppiumBy.accessibilityId("Call"));
     }
-    public void MuteOrUnmute(boolean value){
-        if(value)
-        waitClickable(ElementRegistry.get(ElementKey.MUTE_BUTTON)).click();
-        else
-            waitClickable(ElementRegistry.get(ElementKey.UNMUTE_BUTTON)).click();
 
+    public void muteFor(double duration) throws InterruptedException {
+        waitClickable(ElementRegistry.get(ElementKey.MUTE_BUTTON)).click();
+        WaiteForTime(duration);
     }
+    public void speakFor(double duration) throws InterruptedException {
+        waitClickable(ElementRegistry.get(ElementKey.UNMUTE_BUTTON)).click();
+        WaiteForTime(duration);
+        muteFor(0)  ;  }
+
 }

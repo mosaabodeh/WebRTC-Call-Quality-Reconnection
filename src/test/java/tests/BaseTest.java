@@ -10,6 +10,7 @@ import io.appium.java_client.service.local.AppiumServiceBuilder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.Assert;
 import org.testng.annotations.*;
 
 import pages.*;
@@ -248,6 +249,19 @@ public class BaseTest {
         callA.remove();
         callB.remove();
         logger.info("Parallel cleanup finished successfully.");
+    }
+    protected void prepareConference() {
+        establishBaseCall();
+        audioCall();
+
+        dashboardAInstance.addParticipantToCall(nameC);
+
+        Assert.assertTrue(
+                conA.verifyAddedUserInParticipantList(nameC),
+                "Participant " + nameC + " was not added."
+        );
+
+        conA.clickNavigationBack();
     }
 
     @AfterClass(alwaysRun = true)

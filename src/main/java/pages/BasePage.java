@@ -13,6 +13,8 @@ import org.openqa.selenium.Point;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import pages.locators.ElementKey;
+import pages.locators.ElementRegistry;
 import utils.ConfigReader;
 import utils.ToastOcrHandler;
 import java.time.Duration;
@@ -86,18 +88,9 @@ public class BasePage {
         WebElement el = waitVisible(locator);
         el.clear();
         el.sendKeys(text);
-
         hideKeyboardIfShown();
     }
 
-    public void clickIfElementAppears(By locator) {
-        try {
-            WebDriverWait shortWait = new WebDriverWait(driver, Duration.ofSeconds(3));
-            shortWait.until(ExpectedConditions.elementToBeClickable(locator)).click();
-        } catch (Exception e) {
-            System.out.println("ℹ️ System element did not appear. Proceeding execution context...");
-        }
-    }
     public String getErrorMessage() {
         try {
             String toastText = ToastOcrHandler.captureAndReadToast(driver);
@@ -142,15 +135,11 @@ public class BasePage {
 
         driver.executeScript("mobile: clickGesture", tapParams);
     }
-    public boolean isConferenceLocked() throws InterruptedException {
-        clickButtonByCoordinates(AppiumBy.androidUIAutomator("new UiSelector().text(\"LIVE\")"));
-        clickJoinButton();
-        WaiteForTime(1);
-        String res=getErrorMessage();
-        System.out.println("[" + res + "]");
-        return res.contains(
-                "this conference has been locked, you are not allowed to enter the meeting."
-        );
+    public void waitUntilRecordingFinished() {
+        By recordingIndicator = ElementRegistry.get(ElementKey.RECORD_INDICATOR);
+
+        new WebDriverWait(driver, Duration.ofMinutes(2))
+                .until(ExpectedConditions.invisibilityOfElementLocated(recordingIndicator));
     }
 
     public String getToastMessage() {
@@ -158,8 +147,7 @@ public class BasePage {
 
         WebDriverWait shortWait = new WebDriverWait(driver, Duration.ofSeconds(5));
         WebElement toastElement = shortWait.until(
-                ExpectedConditions.presenceOfElementLocated(toastLocator)
-        );
+                ExpectedConditions.presenceOfElementLocated(toastLocator));
         String toastText = toastElement.getText();
         if (toastText == null || toastText.isEmpty()) {
             toastText = toastElement.getAttribute("text");

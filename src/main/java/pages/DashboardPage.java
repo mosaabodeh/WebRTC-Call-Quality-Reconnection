@@ -2,9 +2,14 @@ package pages;
 
 import io.appium.java_client.AppiumBy;
 import io.appium.java_client.AppiumDriver;
+import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import pages.locators.ElementKey;
 import pages.locators.ElementRegistry;
+
+import java.time.Duration;
 
 public class DashboardPage extends BasePage {
 
@@ -41,7 +46,14 @@ public class DashboardPage extends BasePage {
         clickIfElementAppears(ElementRegistry.get(ElementKey.ALLOW_ACCESS_CAMERA));
         click(ElementRegistry.get(ElementKey.VIDEO_CALL_BUTTON));
     }
-
+    public void clickIfElementAppears(By locator) {
+        try {
+            WebDriverWait shortWait = new WebDriverWait(driver, Duration.ofSeconds(3));
+            shortWait.until(ExpectedConditions.elementToBeClickable(locator)).click();
+        } catch (Exception e) {
+            System.out.println("ℹ️ System element did not appear. Proceeding execution context...");
+        }
+    }
     public void addParticipantToCall(String userName){
         click(ElementRegistry.get(ElementKey.ADD_PARTICIPANTS_BUTTON));
         click(ElementRegistry.get(ElementKey.CALL_PARTICIPANT_OPTION_BUTTON));
