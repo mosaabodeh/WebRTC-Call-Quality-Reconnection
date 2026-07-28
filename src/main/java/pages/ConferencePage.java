@@ -184,7 +184,7 @@ public class ConferencePage extends BasePage{
             String old=clickAndCopyPassword();
             generatePassword();
              newPass=clickAndCopyPassword();
-            if(old.equals(newPass)) System.out.println("The Password change result is : "+false);
+            if(old.equals(newPass)) System.out.println("The Password change result is : " + false);
             else
             System.out.println("The Password change result is : "+true);
         }
