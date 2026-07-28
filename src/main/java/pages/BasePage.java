@@ -21,8 +21,6 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
-import static pages.CallPage.WaiteForTime;
-
 public class BasePage {
 
     protected final AppiumDriver driver;

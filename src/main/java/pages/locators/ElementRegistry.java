@@ -71,7 +71,8 @@ public class ElementRegistry {
         mobile.put(ElementKey.REMOTE_VIDEO_CONTAINER,
                 By.id(
                         "com.ale.rainbow:id/videoContainer"));//enable,display
-
+        mobile.put(ElementKey.SHARE_SCREEN_GRID,
+                By.id("com.ale.rainbow:id/surfaceview"));
         mobile.put(ElementKey.VIDEO_UPGRADE_BUTTON,
                By.id("com.ale.rainbow:id/buttonAddVideo"));
 
@@ -114,6 +115,14 @@ public class ElementRegistry {
         mobile.put(
                 ElementKey.SUMMARY_COBY_BUTTON,
                 AppiumBy.androidUIAutomator("new UiSelector().className(\"android.view.View\").instance(3)")
+        );
+        mobile.put(
+                ElementKey.TURNOFF_INCOMING_SHARING,
+                AppiumBy.androidUIAutomator("new UiSelector().className(\"android.widget.LinearLayout\").instance(8)")
+        );
+        mobile.put(
+                ElementKey.TURN_OFF_INCOMING_VIDEO,
+                AppiumBy.androidUIAutomator("new UiSelector().className(\"android.widget.LinearLayout\").instance(6)")
         );
         mobile.put(
                 ElementKey.PARTICIPANT_TALKING_TIME_VALUE,

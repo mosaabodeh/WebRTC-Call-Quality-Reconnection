@@ -41,9 +41,9 @@ public class ConferenceCallTest extends BaseTest {
     @Test(priority = 5,description = "user should be able to See the Added User in the participant List Of the Conference ")
     public void testUserExistInParticipantList()   {
         prepareConference();
-
-        callB.get().endCall();
-        Assert.assertTrue(callB.get().isCallEndedCleanly(), "Device B did not end the call cleanly.");
+        callB.get().upgradeToVideo();
+        conA.verifyTurnedOffIncomingVedio();
+        Assert.assertFalse(callA.get().isVideoFeedReceived(), "The Sharing Video Still Appear");
     }
     @Test(priority = 6,description = "user should be able to See the actual count of user raised hand in the participant List Of the Conference ")
     public void testCountOfRaisingHand()   {
@@ -51,7 +51,6 @@ public class ConferenceCallTest extends BaseTest {
 
         rasB.raisHand();
         Assert.assertTrue(resA.isTheCounterOfRaisHAndAccurate(), "The Count of Rais hand dose not correct.");
-
 
     }
     @Test(priority = 7,description = "user should be able to See the actual count of user raised hand in the participant List Of the Conference ")
@@ -143,7 +142,8 @@ public class ConferenceCallTest extends BaseTest {
     public void testFillUrlInChromeWithPassword()  {
         prepareConference();
 
-        String res=conA.verifySharingBubbleWithCustomSetting(true,true);
+        String password=conA.verifySharingBubbleWithCustomSetting(true,true);
+        String res=conA.shareLink();
         ChromeNavigationUtils chromeNavigationUtils = new ChromeNavigationUtils(DeviceManager.getDriverB());
         chromeNavigationUtils.openChromeAndNavigateToFirstLink(res);
         chromeNavigationUtils.reopenRainbow();
@@ -151,5 +151,11 @@ public class ConferenceCallTest extends BaseTest {
         conB.returnToActiveCall();
 
     }
-
+    @Test(priority = 16,description = "user should be able to Turn Off incoming sharing screen and stop se the share in the grid ")
+    public void testTurnOffIncomingSharing() throws InterruptedException {
+        prepareConference();
+        conB.sharingScreen();
+        conA.verifyTurnedOffIncomingSharing();
+        Assert.assertFalse(conB.isShareScreenAppear(), "The Sharing sharing screen Still Appear");
+    }
 }

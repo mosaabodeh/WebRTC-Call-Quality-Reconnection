@@ -81,7 +81,6 @@ public class ConferencePage extends BasePage{
 
     void enableTranscript(){
         waitClickable(ElementRegistry.get(ElementKey.TRANSCRIPTION_SWITCH)).click();
-
     }
 
    void enableSummary(){
@@ -90,18 +89,17 @@ public class ConferencePage extends BasePage{
    }
    void enableDelete(){
        waitClickable(ElementRegistry.get(ElementKey.DELETE_RECORD_SWITCH)).click();
-
    }
 
-    void startRecording(){
+    private void startRecording(){
         waitClickable(ElementRegistry.get(ElementKey.START_OK_APPLY)).click();
     }
 
-    boolean isRecordingStarted(){
+   private  boolean isRecordingStarted(){
         return waitVisible(ElementRegistry.get(ElementKey.RECORD_INDICATOR)).isDisplayed();
    }
 
-   String getRecordingMessage(){
+  private String getRecordingMessage(){
        return waitVisible(ElementRegistry.get(ElementKey.RECORD_INFORMATION_MESSAGE)).getText();
    }
     public boolean recordWithTranscript(){
@@ -146,64 +144,78 @@ public class ConferencePage extends BasePage{
         String res=getErrorMessage();
         System.out.println("[" + res + "]");
         return res.contains(
-                "this conference has been locked, you are not allowed to enter the meeting."
-        );
+                "this conference has been locked, you are not allowed to enter the meeting.");
     }
     public String verifySharingLinkStander(){
-        waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
-        waitClickable(ElementRegistry.get(ElementKey.MEETING_OPTION)).click();
+        meetingOption();
         waitClickable(ElementRegistry.get(ElementKey.SHARE_BUTTON)).click();
         waitClickable(ElementRegistry.get(ElementKey.SHARE_LINK)).click();
         waitClickable(ElementRegistry.get(ElementKey.COPY_BUTTON)).click();
         return DeviceManager.getDriverA().getClipboardText();
     }
-   void openMeetingSettings(){
-       waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
-       waitClickable(ElementRegistry.get(ElementKey.MEETING_OPTION)).click();
+  private void openMeetingSettings(){
+      meetingOption();
        waitClickable(ElementRegistry.get(ElementKey.SHARE_BUTTON)).click();
        waitClickable(ElementRegistry.get(ElementKey.SHARE_WITH_EVERYONE)).click();
    }
 
-   void enableWaitingRoom(){
+  private void enableWaitingRoom(){
         waitClickable(ElementRegistry.get(ElementKey.WAITING_ROOM)).click();
 
     }
 
-    void enablePassword(){
+   private void enablePassword(){
         scrollToBottom();
         waitClickable(ElementRegistry.get(ElementKey.ROOM_PASSWORD)).click();
     }
 
-
-
-    void generatePassword(){
+   private void generatePassword(){
         waitClickable(ElementRegistry.get(ElementKey.REGENERATE_NEW_PASSWORD)).click();
     }
     public String verifySharingBubbleWithCustomSetting(boolean WaitingRoom,boolean protectedWithPassword){
         openMeetingSettings();
+        String newPass = "";
+
         if(WaitingRoom){
-            enableWaitingRoom();        }
+            enableWaitingRoom();
+        }
         if(protectedWithPassword){
             enablePassword();
             scrollToBottom();
             String old=clickAndCopyPassword();
             generatePassword();
-            String newPass=clickAndCopyPassword();
+             newPass=clickAndCopyPassword();
             if(old.equals(newPass)) System.out.println("The Password change result is : "+false);
+            else
             System.out.println("The Password change result is : "+true);
         }
-        return DeviceManager.getDriverB().getClipboardText();
+        return newPass;
     }
+    public void verifyTurnedOffIncomingVedio(){
+        waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
+        waitClickable(ElementRegistry.get(ElementKey.TURN_OFF_INCOMING_VIDEO)).click();
+    }
+    public boolean isShareScreenAppear(){
+        return waitVisible(ElementRegistry.get(ElementKey.SHARE_SCREEN_GRID)).isDisplayed();
 
+    }
+    public void verifyTurnedOffIncomingSharing(){
+        waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
+        waitClickable(ElementRegistry.get(ElementKey.TURN_OFF_INCOMING_VIDEO)).click();
+
+    }
     private String clickAndCopyPassword() {
         waitClickable(ElementRegistry.get(ElementKey.COPY_MEETING_PASSWORD)).click();
         String actualClipboardText = ((HasClipboard) driver).getClipboardText();
         System.out.println(actualClipboardText);
         return actualClipboardText;
     }
-    public void configureMeetingOptions(boolean muteWhenEnter, boolean playSound)  {
+    private void meetingOption(){
         waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
         waitClickable(ElementRegistry.get(ElementKey.MEETING_OPTION)).click();
+    }
+    public void configureMeetingOptions(boolean muteWhenEnter, boolean playSound)  {
+        meetingOption();
 
         WebElement muteToggle = waitClickable(ElementRegistry.get(ElementKey.MUTE_COMPARTMENT_UPON_ENTRY));
         boolean isMuteCurrentlyChecked = Boolean.parseBoolean(muteToggle.getAttribute("checked"));
@@ -219,8 +231,7 @@ public class ConferencePage extends BasePage{
     }
 
     public boolean areMeetingOptionsApplied(boolean expectedMute, boolean expectedPlaySound) {
-        waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
-        waitClickable(ElementRegistry.get(ElementKey.MEETING_OPTION)).click();
+        meetingOption();
 
         WebElement muteToggle = waitClickable(ElementRegistry.get(ElementKey.MUTE_COMPARTMENT_UPON_ENTRY));
         WebElement soundToggle = waitClickable(ElementRegistry.get(ElementKey.PLAY_SOUND_ENTRY));
@@ -236,7 +247,12 @@ public class ConferencePage extends BasePage{
 
         clickButtonByCoordinates(AppiumBy.accessibilityId("Call"));
     }
-
+public String shareLink(){
+    waitClickable(ElementRegistry.get(ElementKey.SHARE_BUTTON)).click();
+    waitClickable(ElementRegistry.get(ElementKey.SHARE_LINK)).click();
+    waitClickable(ElementRegistry.get(ElementKey.COPY_BUTTON)).click();
+    return DeviceManager.getDriverA().getClipboardText();
+}
     public void muteFor(double duration) throws InterruptedException {
         waitClickable(ElementRegistry.get(ElementKey.MUTE_BUTTON)).click();
         WaiteForTime(duration);
@@ -244,6 +260,7 @@ public class ConferencePage extends BasePage{
     public void speakFor(double duration) throws InterruptedException {
         waitClickable(ElementRegistry.get(ElementKey.UNMUTE_BUTTON)).click();
         WaiteForTime(duration);
-        muteFor(0)  ;  }
+        muteFor(0)  ;
+    }
 
 }
