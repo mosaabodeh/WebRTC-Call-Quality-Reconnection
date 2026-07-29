@@ -13,8 +13,7 @@ import org.openqa.selenium.Point;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import pages.locators.ElementKey;
-import pages.locators.ElementRegistry;
+
 import utils.ConfigReader;
 import utils.ToastOcrHandler;
 import java.time.Duration;
@@ -49,7 +48,7 @@ public class BasePage {
 
         try {
             androidDriver.openNotifications();
-            Thread.sleep(1500);
+            Thread.sleep(1000);
             By callNotificationLocator = AppiumBy.xpath(
                     "//*[@package='com.ale.rainbow' or contains(@text, 'Audio call') or contains(@text, 'Return to call')]"
             );
@@ -133,12 +132,7 @@ public class BasePage {
 
         driver.executeScript("mobile: clickGesture", tapParams);
     }
-    public void waitUntilRecordingFinished() {
-        By recordingIndicator = ElementRegistry.get(ElementKey.RECORD_INDICATOR);
 
-        new WebDriverWait(driver, Duration.ofMinutes(2))
-                .until(ExpectedConditions.invisibilityOfElementLocated(recordingIndicator));
-    }
 
     public String getToastMessage() {
         By toastLocator = AppiumBy.xpath("//android.widget.Toast");

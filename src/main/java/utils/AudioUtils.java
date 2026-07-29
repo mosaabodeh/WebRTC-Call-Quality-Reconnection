@@ -1,21 +1,26 @@
 package utils;
 
 import io.appium.java_client.android.AndroidDriver;
+import javazoom.jl.player.Player;
 import javax.sound.sampled.*;
 import java.io.File;
+import java.io.FileInputStream;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 public class AudioUtils {
 
-    private static Clip activeClip;
-    private static Process activeProcess;
+    private static volatile Clip activeClip;
+    private static volatile Player activePlayer;
+    private static volatile Process activeProcess;
 
 
-    public static synchronized void startAudio(String localAudioFilePath) {
-        // Stop any audio currently playing before starting a new one
+    public static synchronized CompletableFuture<Void> startAudio(String localAudioFilePath) {
         stopAudio();
+
+        CompletableFuture<Void> finished = new CompletableFuture<>();
 
         new Thread(() -> {
             try {
@@ -23,36 +28,73 @@ public class AudioUtils {
 
                 if (!audioFile.exists()) {
                     System.err.println("Audio file not found at: " + audioFile.getAbsolutePath());
+                    finished.complete(null);
                     return;
                 }
 
-                // WAV/AU formats use Java Sound API
                 if (localAudioFilePath.endsWith(".wav") || localAudioFilePath.endsWith(".au")) {
                     AudioInputStream audioStream = AudioSystem.getAudioInputStream(audioFile);
-                    activeClip = AudioSystem.getClip();
-                    activeClip.open(audioStream);
-                    activeClip.start();
-                } else {
-                    // WEBM/MP3 formats use the native OS media player
-                    String os = System.getProperty("os.name").toLowerCase();
-                    if (os.contains("mac")) {
-                        activeProcess = new ProcessBuilder("afplay", audioFile.getAbsolutePath()).start();
-                    } else if (os.contains("win")) {
-                        activeProcess = new ProcessBuilder("cmd", "/c", "start", "", audioFile.getAbsolutePath()).start();
-                    } else {
-                        activeProcess = new ProcessBuilder("paplay", audioFile.getAbsolutePath()).start();
+                    Clip clip = AudioSystem.getClip();
+                    activeClip = clip;
+
+                    clip.addLineListener(event -> {
+                        if (event.getType() == LineEvent.Type.STOP) {
+                            finished.complete(null);
+                        }
+                    });
+
+                    clip.open(audioStream);
+                    clip.start();
+
+                } else if (localAudioFilePath.endsWith(".mp3")) {
+                    // Pure-Java MP3 decode/playback — play() is synchronous and only
+                    // returns when the track truly ends (or close() is called), so
+                    // it's not dependent on any OS media app's process lifecycle.
+                    try (FileInputStream fis = new FileInputStream(audioFile)) {
+                        Player player = new Player(fis);
+                        activePlayer = player;
+                        player.play(); // blocks this background thread until real end-of-audio
                     }
+                    activePlayer = null;
+                    finished.complete(null);
+
+                } else {
+                    // Fallback for other formats (webm, etc.) via native OS player.
+                    // Note: on Windows this may return early for file-association-launched
+                    // apps, since "start /wait" only waits on the launcher stub.
+                    String os = System.getProperty("os.name").toLowerCase();
+                    Process process;
+                    if (os.contains("mac")) {
+                        process = new ProcessBuilder("afplay", audioFile.getAbsolutePath()).start();
+                    } else if (os.contains("win")) {
+                        process = new ProcessBuilder("cmd", "/c",
+                                "start", "/wait", "", audioFile.getAbsolutePath()).start();
+                    } else {
+                        process = new ProcessBuilder("paplay", audioFile.getAbsolutePath()).start();
+                    }
+                    activeProcess = process;
+                    process.waitFor();
+                    finished.complete(null);
                 }
             } catch (Exception e) {
-                System.err.println("Failed to start audio: " + e.getMessage());
+                System.err.println("Failed to start/play audio: " + e.getMessage());
+                finished.completeExceptionally(e);
             }
-        }).start();
+        }, "audio-playback-thread").start();
+
+        return finished;
     }
 
+    public static void playAndWait(String localAudioFilePath) {
+        try {
+            startAudio(localAudioFilePath).join();
+        } catch (Exception e) {
+            System.err.println("Audio playback error: " + e.getMessage());
+        }
+    }
 
     public static synchronized void stopAudio() {
         try {
-            // Stop Java WAV clip
             if (activeClip != null) {
                 if (activeClip.isRunning()) {
                     activeClip.stop();
@@ -61,7 +103,11 @@ public class AudioUtils {
                 activeClip = null;
             }
 
-            // Kill external player process (macOS / Linux / Windows)
+            if (activePlayer != null) {
+                activePlayer.close(); // unblocks player.play() in the playback thread
+                activePlayer = null;
+            }
+
             if (activeProcess != null) {
                 if (activeProcess.isAlive()) {
                     activeProcess.destroyForcibly();
@@ -69,7 +115,6 @@ public class AudioUtils {
                 activeProcess = null;
             }
 
-            // Backup process cleanup for Mac OS player
             String os = System.getProperty("os.name").toLowerCase();
             if (os.contains("mac")) {
                 Runtime.getRuntime().exec(new String[]{"killall", "afplay"});
@@ -78,7 +123,6 @@ public class AudioUtils {
             System.err.println("Failed to stop audio: " + e.getMessage());
         }
     }
-
 
     public static void pushAndPlayOnAndroid(AndroidDriver driver, String relativeResourcePath, String deviceFileName, String mimeType) {
         String localPath = System.getProperty("user.dir") + relativeResourcePath;

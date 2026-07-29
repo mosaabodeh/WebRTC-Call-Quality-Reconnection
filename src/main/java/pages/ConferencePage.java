@@ -11,7 +11,11 @@ import pages.locators.ElementKey;
 import pages.locators.ElementRegistry;
 import utils.NotificationUtils;
 import utils.SummaryValidator;
+import utils.ToastOcrHandler;
+
 import java.time.Duration;
+import java.util.List;
+
 import static pages.CallPage.WaiteForTime;
 
 public class ConferencePage extends BasePage{
@@ -43,10 +47,107 @@ public class ConferencePage extends BasePage{
     public boolean isMutedToastAppear() {
         return getToastMessage().contains("You are muted");
     }
-
-    public boolean verifyAddedUserInParticipantList (String userName ) {
+    public void participantList(){
         waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
         waitClickable(ElementRegistry.get(ElementKey.PARTICIPANT_LIST)).click();
+    }
+    public boolean verifyUserRoleInRainbow(String name, String expectedRole) {
+
+        WebElement participantsList = driver.findElement(
+                AppiumBy.id("com.ale.rainbow:id/room_participants_recyclerview")
+        );
+
+        List<WebElement> participantButtons = participantsList.findElements(
+                AppiumBy.className("android.widget.Button")
+        );
+
+        String expectedName = name.trim();
+        String normalizedExpectedRole = expectedRole.trim();
+
+        for (WebElement participantButton : participantButtons) {
+
+            String contentDesc = participantButton.getAttribute("content-desc");
+
+            if (contentDesc == null || contentDesc.isBlank()) {
+                continue;
+            }
+
+            System.out.println("Participant content-desc: " + contentDesc);
+
+            String actualName = extractParticipantName(contentDesc);
+
+            // Exact name comparison
+            if (!actualName.equalsIgnoreCase(expectedName)) {
+                continue;
+            }
+
+            String actualRole = determineParticipantRole(
+                    participantButton,
+                    contentDesc
+            );
+
+            boolean roleMatches =
+                    actualRole.equalsIgnoreCase(normalizedExpectedRole);
+
+            System.out.println("Participant name: " + actualName);
+            System.out.println("Expected role: " + normalizedExpectedRole);
+            System.out.println("Actual role: " + actualRole);
+            System.out.println("Role matches: " + roleMatches);
+
+            return roleMatches;
+        }
+
+        System.out.println("Participant not found: " + expectedName);
+        return false;
+    }
+    private String extractParticipantName(String contentDesc) {
+
+        int firstCommaIndex = contentDesc.indexOf(",");
+
+        if (firstCommaIndex == -1) {
+            return contentDesc.trim();
+        }
+
+        return contentDesc.substring(0, firstCommaIndex).trim();
+    }
+
+    private String determineParticipantRole(
+            WebElement participantButton,
+            String contentDesc) {
+
+        if (containsExactRole(contentDesc, "Owner")) {
+            return "Owner";
+        }
+
+        if (containsExactRole(contentDesc, "Organizer")) {
+            return "Organizer";
+        }
+
+        // A member has no Owner or Organizer role icon
+        return "Member";
+    }
+    private boolean containsExactRole(String contentDesc, String role) {
+
+        String[] parts = contentDesc.split(",");
+
+        for (String part : parts) {
+            if (part.trim().equalsIgnoreCase(role)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public void addRoomToConference(){
+        click(ElementRegistry.get(ElementKey.ADD_PARTICIPANTS_BUTTON));
+        waitClickable(ElementRegistry.get(ElementKey.CALL_RAINBOW_ROOM)).click();
+        waitClickable(ElementRegistry.get(ElementKey.RAINBOW_TEST_ROOM)).click();
+        click(ElementRegistry.get(ElementKey.CONTINUE));
+
+    }
+    public boolean verifyAddedUserInParticipantList (String userName ) {
+        participantList();
         if (userName == null || userName.isBlank()) return false;
 
         try {
@@ -120,7 +221,7 @@ public class ConferencePage extends BasePage{
         NotificationUtils.clickFirstNotification((AndroidDriver) this.driver);
         waitClickable(ElementRegistry.get(ElementKey.SUMMARY_COBY_BUTTON)).click();
         String summaryResult = ((HasClipboard) driver).getClipboardText();
-
+        System.out.println("the Summary Result is : "+summaryResult);
         return isSummaryCorrect(summaryResult);
     }
     public boolean isSummaryCorrect(String summary) {
@@ -147,10 +248,7 @@ public class ConferencePage extends BasePage{
     }
     public String verifySharingLinkStander(){
         meetingOption();
-        waitClickable(ElementRegistry.get(ElementKey.SHARE_BUTTON)).click();
-        waitClickable(ElementRegistry.get(ElementKey.SHARE_LINK)).click();
-        waitClickable(ElementRegistry.get(ElementKey.COPY_BUTTON)).click();
-        return DeviceManager.getDriverA().getClipboardText();
+       return shareLink();
     }
   private void openMeetingSettings(){
       meetingOption();
@@ -171,9 +269,8 @@ public class ConferencePage extends BasePage{
    private void generatePassword(){
         waitClickable(ElementRegistry.get(ElementKey.REGENERATE_NEW_PASSWORD)).click();
     }
-    public String verifySharingBubbleWithCustomSetting(boolean WaitingRoom,boolean protectedWithPassword){
+    public void verifySharingBubbleWithCustomSetting(boolean WaitingRoom,boolean protectedWithPassword){
         openMeetingSettings();
-        String newPass = "";
 
         if(WaitingRoom){
             enableWaitingRoom();
@@ -183,25 +280,26 @@ public class ConferencePage extends BasePage{
             scrollToBottom();
             String old=clickAndCopyPassword();
             generatePassword();
-             newPass=clickAndCopyPassword();
-            if(old.equals(newPass)) System.out.println("The Password change result is : " + false);
+            String newPass=clickAndCopyPassword();
+            if(old.equals(newPass))
+                System.out.println("The Password change result is : " + false);
             else
             System.out.println("The Password change result is : "+true);
         }
-        return newPass;
     }
-    public void verifyTurnedOffIncomingVedio(){
+    public void verifyTurnedOffIncomingVideo(){
         waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
         waitClickable(ElementRegistry.get(ElementKey.TURN_OFF_INCOMING_VIDEO)).click();
     }
     public boolean isShareScreenAppear(){
-        return waitVisible(ElementRegistry.get(ElementKey.SHARE_SCREEN_GRID)).isDisplayed();
-
-    }
-    public void verifyTurnedOffIncomingSharing(){
+        try {
+            return waitVisible(ElementRegistry.get(ElementKey.SHARE_SCREEN_GRID)).isDisplayed();
+        } catch (Exception e) {
+            return false;
+        }    }
+    public void verifyTurnedOffIncomingSharing()   {
         waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
-        waitClickable(ElementRegistry.get(ElementKey.TURN_OFF_INCOMING_VIDEO)).click();
-
+        waitClickable(ElementRegistry.get(ElementKey.TURNOFF_INCOMING_SHARING)).click();
     }
     private String clickAndCopyPassword() {
         waitClickable(ElementRegistry.get(ElementKey.COPY_MEETING_PASSWORD)).click();
@@ -261,5 +359,21 @@ public String shareLink(){
         WaiteForTime(duration);
         muteFor(0)  ;
     }
+
+    public boolean verifyUserRuleInRaibow(String name, String rule) {
+        WebElement participant = driver.findElement(ElementRegistry.getParticipantNameLocator(name));
+        String contentDesc = participant.getAttribute("content-desc");
+        System.out.println("The Real Text is : "+contentDesc);
+        return contentDesc.contains(name) && contentDesc.contains(rule);
+
+    }
+    public void missCall() {
+        waitClickable(ElementRegistry.get(ElementKey.CANCEL_CALL_BUTTON)).click();
+    }
+    public boolean isMissedCallNotificationAppear() {
+        return ToastOcrHandler.waitForMissedCallBanner(driver, 8, 500);
+
+    }
+
 
 }

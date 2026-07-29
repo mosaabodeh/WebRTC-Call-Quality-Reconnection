@@ -193,7 +193,6 @@ public class BaseTest {
     protected void audioCall() {
         dashboardAInstance.callContact(nameB);
         callB.get().answerCallAndConfirmStable();
-
 }
     @AfterMethod(alwaysRun = true)
     public void cleanUpAfterTestMethod() {

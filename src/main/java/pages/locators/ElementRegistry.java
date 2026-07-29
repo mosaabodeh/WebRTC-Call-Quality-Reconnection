@@ -65,6 +65,9 @@ public class ElementRegistry {
 
         mobile.put(ElementKey.HANG_UP_BUTTON,
                 AppiumBy.androidUIAutomator("new UiSelector().resourceId(\"com.ale.rainbow:id/button_hangup\")"));
+
+        mobile.put(ElementKey.CANCEL_CALL_BUTTON,
+                AppiumBy.androidUIAutomator("new UiSelector().resourceId(\"com.ale.rainbow:id/button_cancel\")"));
         mobile.put(ElementKey.REJECT_CALL_BUTTON,
                 AppiumBy.id("com.ale.rainbow:id/button_reject"));
 
@@ -72,7 +75,7 @@ public class ElementRegistry {
                 By.id(
                         "com.ale.rainbow:id/videoContainer"));//enable,display
         mobile.put(ElementKey.SHARE_SCREEN_GRID,//enable ,display
-                By.id("com.ale.rainbow:id/surfaceview"));
+                AppiumBy.androidUIAutomator("new UiSelector().resourceId(\"com.ale.rainbow:id/surfaceview\")"));
         mobile.put(ElementKey.VIDEO_UPGRADE_BUTTON,
                By.id("com.ale.rainbow:id/buttonAddVideo"));
 
@@ -83,8 +86,15 @@ public class ElementRegistry {
                 AppiumBy.accessibilityId("Add participants"));
         mobile.put(
                 ElementKey.CALL_PARTICIPANT_OPTION_BUTTON,
-                AppiumBy.androidUIAutomator("new UiSelector().className(\"android.widget.LinearLayout\").instance(0)")
-        );
+                AppiumBy.androidUIAutomator("new UiSelector().className(\"android.widget.LinearLayout\").instance(0)"));
+        mobile.put(
+                ElementKey.CALL_RAINBOW_ROOM,
+                AppiumBy.androidUIAutomator("new UiSelector().className(\"android.widget.LinearLayout\").instance(2)"));
+        mobile.put(
+                ElementKey.RAINBOW_TEST_ROOM,
+                AppiumBy.androidUIAutomator("new UiSelector().className(\"android.widget.Button\").instance(1)"));
+
+
         mobile.put(
                 ElementKey.EMAIL_FIELD,
                 AppiumBy.androidUIAutomator("new UiSelector().className(\"android.widget.EditText\").instance(0)")
@@ -249,8 +259,6 @@ public class ElementRegistry {
         mobile.put(ElementKey.MEETING_LOCK,
                 AppiumBy.accessibilityId("Meeting locked"));
 
-        mobile.put(ElementKey.PARTICIPANT_NAME,
-                AppiumBy.xpath   ("//android.widget.TextView[@resource-id='com.ale.rainbow:id/participant_display_name' and @text='%s']"));
 
 
         REGISTRY.put("android", mobile);
@@ -276,6 +284,10 @@ public class ElementRegistry {
                 "//android.widget.TextView[@resource-id='com.ale.rainbow:id/participant_hand_raised_number' and @text='%d']",
                 count
         ));
+    }
+    public static By getParticipantNameLocator(String name) {
+        return AppiumBy.xpath(String.format("//android.widget.Button[starts-with(@content-desc, '%s,')]", name));
+
     }
 
 
