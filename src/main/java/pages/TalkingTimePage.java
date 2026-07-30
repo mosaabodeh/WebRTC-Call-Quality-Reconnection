@@ -29,6 +29,7 @@ public class TalkingTimePage extends BasePage {
                         AppiumBy.id(DURATION_ID)));
     }
 
+
     public String getParticipantTime(int participantIndex) {
 
         List<WebElement> timers = getParticipantTimers();

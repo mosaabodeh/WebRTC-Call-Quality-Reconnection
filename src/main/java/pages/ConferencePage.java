@@ -54,18 +54,15 @@ public class ConferencePage extends BasePage{
     public boolean verifyUserRoleInRainbow(String name, String expectedRole) {
 
         WebElement participantsList = driver.findElement(
-                AppiumBy.id("com.ale.rainbow:id/room_participants_recyclerview")
-        );
+                AppiumBy.id("com.ale.rainbow:id/room_participants_recyclerview"));
 
         List<WebElement> participantButtons = participantsList.findElements(
-                AppiumBy.className("android.widget.Button")
-        );
+                AppiumBy.className("android.widget.Button"));
 
         String expectedName = name.trim();
         String normalizedExpectedRole = expectedRole.trim();
 
         for (WebElement participantButton : participantButtons) {
-
             String contentDesc = participantButton.getAttribute("content-desc");
 
             if (contentDesc == null || contentDesc.isBlank()) {
@@ -75,24 +72,12 @@ public class ConferencePage extends BasePage{
             System.out.println("Participant content-desc: " + contentDesc);
 
             String actualName = extractParticipantName(contentDesc);
-
             // Exact name comparison
             if (!actualName.equalsIgnoreCase(expectedName)) {
                 continue;
             }
-
-            String actualRole = determineParticipantRole(
-                    participantButton,
-                    contentDesc
-            );
-
-            boolean roleMatches =
-                    actualRole.equalsIgnoreCase(normalizedExpectedRole);
-
-            System.out.println("Participant name: " + actualName);
-            System.out.println("Expected role: " + normalizedExpectedRole);
-            System.out.println("Actual role: " + actualRole);
-            System.out.println("Role matches: " + roleMatches);
+            String actualRole = determineParticipantRole(participantButton,contentDesc);
+            boolean roleMatches =actualRole.equalsIgnoreCase(normalizedExpectedRole);
 
             return roleMatches;
         }
@@ -127,15 +112,12 @@ public class ConferencePage extends BasePage{
         return "Member";
     }
     private boolean containsExactRole(String contentDesc, String role) {
-
         String[] parts = contentDesc.split(",");
-
         for (String part : parts) {
             if (part.trim().equalsIgnoreCase(role)) {
                 return true;
             }
         }
-
         return false;
     }
 
@@ -188,6 +170,7 @@ public class ConferencePage extends BasePage{
 
    }
    void enableDelete(){
+        scrollToBottom();
        waitClickable(ElementRegistry.get(ElementKey.DELETE_RECORD_SWITCH)).click();
    }
 
@@ -218,7 +201,7 @@ public class ConferencePage extends BasePage{
     }
 
     public boolean isTranscriptTextAccurate() {
-        NotificationUtils.clickFirstNotification((AndroidDriver) this.driver);
+        new NotificationUtils((AndroidDriver) driver).clickFirstNotification();
         waitClickable(ElementRegistry.get(ElementKey.SUMMARY_COBY_BUTTON)).click();
         String summaryResult = ((HasClipboard) driver).getClipboardText();
         System.out.println("the Summary Result is : "+summaryResult);
@@ -228,7 +211,6 @@ public class ConferencePage extends BasePage{
         return SummaryValidator.isSummaryValid(summary);
     }
     public boolean lockTheMeeting() {
-        System.out.println("Inside The Making meeting Locked");
         waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
         waitClickable(ElementRegistry.get(ElementKey.LOCK_MEETING)).click();
         waitClickable(ElementRegistry.get(ElementKey.START_OK_APPLY)).click();
@@ -313,15 +295,15 @@ public class ConferencePage extends BasePage{
     }
     public void configureMeetingOptions(boolean muteWhenEnter, boolean playSound)  {
         meetingOption();
-
+       String checked= "checked";
         WebElement muteToggle = waitClickable(ElementRegistry.get(ElementKey.MUTE_COMPARTMENT_UPON_ENTRY));
-        boolean isMuteCurrentlyChecked = Boolean.parseBoolean(muteToggle.getAttribute("checked"));
+        boolean isMuteCurrentlyChecked = Boolean.parseBoolean(muteToggle.getAttribute(checked));
         if (isMuteCurrentlyChecked != muteWhenEnter) {
             muteToggle.click();
         }
 
         WebElement soundToggle = waitClickable(ElementRegistry.get(ElementKey.PLAY_SOUND_ENTRY));
-        boolean isSoundCurrentlyChecked = Boolean.parseBoolean(soundToggle.getAttribute("checked"));
+        boolean isSoundCurrentlyChecked = Boolean.parseBoolean(soundToggle.getAttribute(checked));
         if (isSoundCurrentlyChecked != playSound) {
             soundToggle.click();
         }
@@ -344,7 +326,7 @@ public class ConferencePage extends BasePage{
 
         clickButtonByCoordinates(AppiumBy.accessibilityId("Call"));
     }
-public String shareLink(){
+    public String shareLink(){
     waitClickable(ElementRegistry.get(ElementKey.SHARE_BUTTON)).click();
     waitClickable(ElementRegistry.get(ElementKey.SHARE_LINK)).click();
     waitClickable(ElementRegistry.get(ElementKey.COPY_BUTTON)).click();
@@ -374,6 +356,5 @@ public String shareLink(){
         return ToastOcrHandler.waitForMissedCallBanner(driver, 8, 500);
 
     }
-
 
 }

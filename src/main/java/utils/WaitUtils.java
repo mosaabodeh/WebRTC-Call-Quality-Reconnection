@@ -31,7 +31,7 @@ public class WaitUtils extends BasePage {
         new WebDriverWait(driver, Duration.ofMinutes(3))
                 .until(driver -> {
                     try {
-                        NotificationUtils.clickFirstNotification((AndroidDriver) driver);
+                        new NotificationUtils((AndroidDriver) driver).clickFirstNotification();
                         return true;
                     } catch (Exception e) {
                         return false;

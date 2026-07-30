@@ -12,11 +12,14 @@ import java.util.List;
 
 public class NotificationUtils {
 
-    /**
-     * Original method: Opens notification shade and clicks the first notification.
-     */
-    public static void clickFirstNotification(AndroidDriver driver) {
-        driver.openNotifications();
+    private final AndroidDriver driver;
+
+    public NotificationUtils(AndroidDriver driver) {
+        this.driver = driver;
+    }
+
+    public  void clickFirstNotification() {
+        this.driver.openNotifications();
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
         AppiumBy notificationTitleLocator = (AppiumBy) AppiumBy.id("android:id/title");
 
@@ -34,35 +37,23 @@ public class NotificationUtils {
         }
     }
 
-    /**
-     * Sends the application to the background indefinitely until explicitly restored.
-     */
-    public static void sendAppToBackground(AndroidDriver driver) {
+    public void sendAppToBackground() {
         driver.runAppInBackground(Duration.ofSeconds(-1));
     }
 
-    /**
-     * Terminates the target application package completely.
-     */
-    public static void terminateApp(AndroidDriver driver, String appPackage) {
+    public void terminateApp(String appPackage) {
         driver.terminateApp(appPackage);
     }
 
-    /**
-     * Brings the application back to the foreground / launches it.
-     */
-    public static void activateApp(AndroidDriver driver, String appPackage) {
+    public void activateApp(String appPackage) {
         driver.activateApp(appPackage);
     }
 
-    /**
-     * Opens the notification shade, verifies if a missed call notification exists,
-     * and automatically closes the notification shade before returning.
-     */
-    public static boolean isMissedCallNotificationDisplayed(AndroidDriver driver, String expectedCallerName) {
+    public boolean isMissedCallNotificationDisplayed(String expectedCallerName) {
         try {
-            driver.openNotifications();
+            Thread.sleep(5000);
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+            driver.openNotifications();
             By titleLocator = AppiumBy.id("android:id/title");
             By textLocator = AppiumBy.id("android:id/text");
 
@@ -73,30 +64,30 @@ public class NotificationUtils {
 
             for (WebElement title : titles) {
                 String titleText = title.getText().toLowerCase();
+                System.out.println("the current notification title is : " + titleText);
                 if (titleText.contains("missed call") || titleText.contains(expectedCallerName.toLowerCase())) {
-                    driver.navigate().back(); // Close notification shade
+                    driver.navigate().back();
                     return true;
                 }
             }
 
             for (WebElement text : texts) {
                 String subText = text.getText().toLowerCase();
+                System.out.println("the current notification Text is : " + subText);
+
                 if (subText.contains("missed call") || subText.contains(expectedCallerName.toLowerCase())) {
-                    driver.navigate().back(); // Close notification shade
+                    driver.navigate().back();
                     return true;
                 }
             }
         } catch (Exception e) {
             System.err.println("⚠️ Error finding missed call notification: " + e.getMessage());
         }
-        driver.navigate().back(); // Close notification shade if search fails
+        driver.navigate().back();
         return false;
     }
 
-    /**
-     * Attempts to read the badge counter number on the launcher app icon.
-     */
-    public static int getAppIconBadgeCount(AndroidDriver driver) {
+    public int getAppIconBadgeCount() {
         try {
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(5));
 
@@ -107,13 +98,12 @@ public class NotificationUtils {
                 return Integer.parseInt(samsungElements.get(0).getText().trim());
             }
 
-            // 2. Look for the Rainbow app icon and check its content-desc (e.g., "Rainbow, 1 unread notification")
+            // 2. Rainbow app icon content-desc locator
             By rainbowIcon = AppiumBy.xpath("//*[contains(@content-desc, 'Rainbow') or contains(@content-desc, 'rainbow')]");
             List<WebElement> iconElements = driver.findElements(rainbowIcon);
             if (!iconElements.isEmpty()) {
                 String desc = iconElements.get(0).getAttribute("content-desc");
                 if (desc != null) {
-                    // Extracts numbers from strings like "Rainbow, 1 new notification"
                     String numericOnly = desc.replaceAll("[^0-9]", "");
                     if (!numericOnly.isEmpty()) {
                         return Integer.parseInt(numericOnly);

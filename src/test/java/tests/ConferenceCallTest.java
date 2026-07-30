@@ -1,13 +1,7 @@
 package tests;
-
-import drivers.DeviceManager;
-import io.appium.java_client.android.AndroidDriver;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import pages.ChromeNavigationUtils;
 import utils.AudioUtils;
-import utils.NotificationUtils;
-
 
 public class ConferenceCallTest extends BaseTest {
     @Test(priority = 1,description = "user should be able to Add another User to existence call, and update the call To Conference And the added user Appear in Conference List ")
@@ -18,27 +12,25 @@ public class ConferenceCallTest extends BaseTest {
     @Test(priority = 2,description = "user should be able to Receive the incoming Video From the Conference users ")
     public void testSharingVideo() {
         prepareConference();
-
         callB.get().upgradeToVideo();
         boolean isVideoContainerVisible = callA.get().isVideoFeedReceived();
         Assert.assertTrue(isVideoContainerVisible, "Video stream container did not pop up on Device B screen.");
-
     }
+
     @Test(priority = 3,description = "user should be able to Receive the incoming sharing screen From the Conference users ")
     public void testSharingScreen() throws InterruptedException {
         prepareConference();
-
         conB.sharingScreen();
         Assert.assertTrue(conA.isSharingScreen());
-          }
+    }
+
     @Test(priority = 4,description = "user should be able to Receive notification that he is muted From the Conference Organizer ")
     public void testMuteAllUser()   {
         prepareConference();
-
         conA.muteAllUsersInTheConference();
         Assert.assertTrue(conB.isMutedToastAppear(), "The Mute Toast Dosnt Appear yet");
-
     }
+
     @Test(priority = 5,description = "user should be able to verify Turned Off Incoming Video ")
     public void testTurningOffIncomingVideo()   {
         prepareConference();
@@ -46,32 +38,32 @@ public class ConferenceCallTest extends BaseTest {
         conA.verifyTurnedOffIncomingVideo();
         Assert.assertFalse(callA.get().isVideoFeedReceived(), "The Sharing Video Still Appear");
     }
+
     @Test(priority = 6,description = "user should be able to See the actual count of user raised hand in the participant List Of the Conference ")
     public void testCountOfRaisingHand()   {
         prepareConference();
-
         rasB.raisHand();
         Assert.assertTrue(resA.isTheCounterOfRaisHAndAccurate(), "The Count of Rais hand dose not correct.");
-
     }
+
     @Test(priority = 7,description = "user should be able to Lawyer ALL Hands that raised and see change in the participant List Of the Conference ")
     public void testLowerRaisingHand()   {
         prepareConference();
         rasB.raisHand();
         Assert.assertTrue(resA.isAllHandLowered(), "Not All hand lowered Successfully");
     }
+
     @Test(priority = 8,description = "user should be able to Select The Speaker Only Mode And See changes ")
     public void testSpeakerMode()   {
         prepareConference();
         conA.SpeakerOnlyMode();
         Assert.assertTrue(conA.isGridViewExist(), "The Grid Dose not Exist Dose not Convert to Speaker Mode ");
-
     }
+
     @Test(priority = 9,description = "user should be able to Start/Active Record With Transcript ")
     public void testRecordWithTranscriptActivation()   {
         prepareConference();
         Assert.assertTrue(conA.recordWithTranscript(), "The Grid Dose not Exist Dose not Convert to Speaker Mode ");
-
     }
 
     @Test(priority = 10,description = "user should be able to real Record With Transcript for audio")
@@ -81,7 +73,7 @@ public class ConferenceCallTest extends BaseTest {
         Assert.assertTrue(conB.recordWithTranscript(), "The Grid Dose not Exist Dose not Convert to Speaker Mode ");
 
         AudioUtils.playAndWait(audioPath);
-        conA.stopRecording();
+        conB.stopRecording();
         Assert.assertTrue(conB.isTranscriptTextAccurate(),"there's an error with the transcript feature ");
     }
 
@@ -106,15 +98,8 @@ public class ConferenceCallTest extends BaseTest {
 
         talkA.openTalkingTimeScreen();
         AudioUtils.stopAudio();
-        Assert.assertNotEquals(
-                talkA.getParticipantTime(1),
-                "00:00",
-                "First participant talking time is invalid.");
-
-        Assert.assertNotEquals(
-                talkA.getParticipantTime(2),
-                "00:00",
-                "Second participant talking time is invalid.");
+        Assert.assertNotEquals(talkA.getParticipantTime(1),"00:00","First participant talking time is invalid.");
+        Assert.assertNotEquals(talkA.getParticipantTime(2),"00:00","Second participant talking time is invalid.");
     }
 
     @Test(priority = 13,description = "user should be able to change The Conference Preferences as he want Mute Enter enter and Play Sound ")
@@ -136,18 +121,18 @@ public class ConferenceCallTest extends BaseTest {
         conB.returnToActiveCall();
 
     }
+
     @Test(priority = 15,description = "user should be able to change The Conference joining setting And add password, waiting room past the copied link of the conference in google chrome ")
     public void testFillUrlInChromeWithPassword()  {
         prepareConference();
-
         conA.verifySharingBubbleWithCustomSetting(true,true);
         String res=conA.shareLink();
-        ChromeNavigationUtils chromeNavigationUtils = new ChromeNavigationUtils(DeviceManager.getDriverB());
         chromeNavigationUtils.openChromeAndNavigateToFirstLink(res);
         chromeNavigationUtils.reopenRainbow();
 
         conB.returnToActiveCall();
     }
+
     @Test(priority = 16,description = "user should be able to Turn Off incoming sharing screen and stop se the share in the grid ")
     public void testTurnOffIncomingSharing() throws InterruptedException {
         prepareConference();
@@ -156,6 +141,7 @@ public class ConferenceCallTest extends BaseTest {
 
         Assert.assertFalse(conA.isShareScreenAppear(), "The Sharing sharing screen Still Appear");
     }
+
     @Test(priority = 17,description = "user should be able to verify the users Rule in the conference ")
     public void testVerifyUSerRoll()   {
         prepareConference();
@@ -165,6 +151,7 @@ public class ConferenceCallTest extends BaseTest {
         conA.verifyUserRuleInRaibow("mosaab odeh","Organizer");
         conA.clickNavigationBack();
     }
+
     @Test(priority = 18,description = "user should be able to verify the users Rule in the conference ")
     public void testVerifyUSerRuleByList()   {
         prepareConference();
@@ -174,6 +161,7 @@ public class ConferenceCallTest extends BaseTest {
         Assert.assertTrue( conA.verifyUserRoleInRainbow("Mosaab acount4", "Member"),"The element Not Found Member");
         conA.clickNavigationBack();
     }
+
     @Test(priority = 19,description = "user should be able to verify That the Rainbow Room added the Conference with Organizer Rule")
     public void testVerifyRainbowRoomAdding()   {
         establishBaseCall();
@@ -183,6 +171,7 @@ public class ConferenceCallTest extends BaseTest {
         Assert.assertTrue( conA.verifyUserRoleInRainbow("Test", "Member"),"The element Not Found Member");
         conA.clickNavigationBack();
     }
+
     @Test(priority = 20,description = "user should be able to verify the missed Call Notification when he app is in the foreground state")
     public void testVerifyMissedCallNotification()   {
         establishBaseCall();
@@ -190,36 +179,32 @@ public class ConferenceCallTest extends BaseTest {
         conA.missCall();
         Assert.assertTrue( conB.isMissedCallNotificationAppear(),"Missed call banner not detected via OCR");
     }
+
     @Test(priority = 21, description = "User should receive a missed call notification when the app is in the background state")
     public void testVerifyMissedCallNotificationAppInBackground() {
         establishBaseCall();
         dashboardAInstance.MissedContact(nameB);
-        NotificationUtils.sendAppToBackground( DeviceManager.getDriverB());
+        notification.sendAppToBackground();
         conA.missCall();
 
-        Assert.assertTrue(
-                NotificationUtils.isMissedCallNotificationDisplayed(DeviceManager.getDriverB(), nameC),
-                "Missed call notification was not received while app is in background"
-        );
+        Assert.assertTrue(notification.isMissedCallNotificationDisplayed( nameC),
+                "Missed call notification was not received while app is in background");
 
-        NotificationUtils.activateApp(DeviceManager.getDriverB(), "com.ale.rainbow");
+        notification.activateApp( "com.ale.rainbow");
     }
 
     @Test(priority = 22, description = "User should receive a missed call notification when the app is terminated")
     public void testVerifyMissedCallNotificationAppTerminated() {
         establishBaseCall();
+        notification.terminateApp("com.ale.rainbow");
         dashboardAInstance.MissedContact(nameB);
-
-        NotificationUtils.terminateApp(DeviceManager.getDriverB(), "com.ale.rainbow");
         conA.missCall();
 
         try {
-            Assert.assertTrue(
-                    NotificationUtils.isMissedCallNotificationDisplayed(DeviceManager.getDriverB(), nameC),
-                    "Missed call notification was not received while app is terminated"
-            );
+            Assert.assertTrue(notification.isMissedCallNotificationDisplayed( nameC),
+                    "Missed call notification was not received while app is terminated");
         } finally {
-            NotificationUtils.activateApp(DeviceManager.getDriverB(), "com.ale.rainbow");
+            notification.activateApp( "com.ale.rainbow");
         }
     }
 
@@ -228,17 +213,11 @@ public class ConferenceCallTest extends BaseTest {
         establishBaseCall();
         dashboardAInstance.MissedContact(nameB);
         conA.missCall();
-        NotificationUtils.sendAppToBackground(DeviceManager.getDriverB());
+        notification.sendAppToBackground();
 
-        Assert.assertTrue(
-                NotificationUtils.getAppIconBadgeCount(DeviceManager.getDriverB()) > 0,
-                "App icon badge count does not indicate missed calls"
-        );
-
-        NotificationUtils.activateApp(DeviceManager.getDriverB(), "com.ale.rainbow");
+        Assert.assertTrue( notification.getAppIconBadgeCount() > 0,"App icon badge count does not indicate missed calls");
+        notification.activateApp( "com.ale.rainbow");
     }
-
-
 
 
 }

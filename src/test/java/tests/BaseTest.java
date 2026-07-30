@@ -16,6 +16,7 @@ import org.testng.annotations.*;
 import pages.*;
 import utils.ConfigReader;
 import utils.JsonReader;
+import utils.NotificationUtils;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -41,6 +42,8 @@ public class BaseTest {
     RaseHandPage resA;
     RaseHandPage rasB;
     TalkingTimePage talkA;
+    NotificationUtils notification;
+    ChromeNavigationUtils chromeNavigationUtils;
 
 
     ChromeNavigationUtils chromeNavigation;
@@ -168,6 +171,8 @@ public class BaseTest {
         rasB=new RaseHandPage(driverB);
         talkA=new TalkingTimePage(driverA);
         chromeNavigation=new ChromeNavigationUtils(driverB);
+        notification=new NotificationUtils(driverB);
+        chromeNavigationUtils=new ChromeNavigationUtils(driverB);
         List<CompletableFuture<Void>> loginTasks = new ArrayList<>();
 
         loginTasks.add(CompletableFuture.runAsync(() -> {

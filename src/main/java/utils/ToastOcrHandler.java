@@ -4,9 +4,7 @@ import io.appium.java_client.AppiumDriver;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
 import org.openqa.selenium.OutputType;
-import org.openqa.selenium.TakesScreenshot;
 import org.apache.commons.io.FileUtils;
-
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -26,7 +24,7 @@ public class ToastOcrHandler {
         tesseract.setDatapath(tessdataPath);
         tesseract.setLanguage("eng");
 
-        File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+        File screenshot = ( driver).getScreenshotAs(OutputType.FILE);
         File destinationFile = new File(projectRoot + File.separator + "target" + File.separator + "toast_screenshot.png");
 
         try {
@@ -53,11 +51,6 @@ public class ToastOcrHandler {
         }
     }
 
-    /**
-     * OCR for the missed-call heads-up banner, which renders near the TOP
-     * of the screen (unlike the toast, which renders near the bottom).
-     * Crops roughly the top 5%-18% of the screen where the banner sits.
-     */
     public static String captureAndReadMissedCallBanner(AppiumDriver driver) {
         Tesseract tesseract = new Tesseract();
 
@@ -70,7 +63,7 @@ public class ToastOcrHandler {
         tesseract.setDatapath(tessdataPath);
         tesseract.setLanguage("eng");
 
-        File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+        File screenshot = ( driver).getScreenshotAs(OutputType.FILE);
         File destinationFile = new File(projectRoot + File.separator + "target" + File.separator + "missed_call_screenshot.png");
 
         try {
