@@ -17,13 +17,10 @@ public class ElementRegistry {
         //For select audio call from popup
         mobile.put(ElementKey.AUDIO_CALL_BUTTON,
                 AppiumBy.androidUIAutomator("new UiSelector().text(\"Audio call\")"));
-       /* mobile.put(ElementKey.FIRST_Search_RESULT,
-                By.xpath(
-                        "//android.view.View[@resource-id=\"conversation_list\"]/android.view.View[1]/android.view.View[2]"));
-       */
+
         mobile.put(ElementKey.FIRST_Search_RESULT,
                 AppiumBy.androidUIAutomator(
-                        "new UiSelector().className(\"android.view.View\").instance(27)"));
+                        "new UiSelector().className(\"android.view.View\").instance(19)"));
         mobile.put(ElementKey.FIRST_SEARCH_CALL_RESULT,
                 AppiumBy.androidUIAutomator(
                         "new UiSelector().className(\"com.google.android.material.button.MaterialButton\").instance(0)"));
@@ -118,12 +115,6 @@ public class ElementRegistry {
                 By.xpath("//android.widget.TextView[@resource-id=\"com.ale.rainbow:id/title\" and @text=\"Grid view\"]"));
         mobile.put(ElementKey.PASSWORD_FIELD,
                 By.xpath("//android.widget.EditText[.//android.widget.TextView[@text='Password'] or @text='Password']"));
-        mobile.put(ElementKey.FIRST_TIMER,
-                By.xpath(  "(//android.widget.TextView[@resource-id='com.ale.rainbow:id/durationTextView' " +
-                        "and contains(@text, ':') " + "and string-length(@text)=5])[1]"));
-        mobile.put(ElementKey.SECOND_TIMER,
-                By.xpath(     "(//android.widget.TextView[@resource-id='com.ale.rainbow:id/durationTextView' " +
-                        "and contains(@text, ':') " + "and string-length(@text)=5])[2]"));
 
         mobile.put(ElementKey.CONTINUE_BUTTON,
                 AppiumBy.androidUIAutomator("new UiSelector().className(\"android.view.View\").instance(7)"));
@@ -177,8 +168,6 @@ public class ElementRegistry {
         mobile.put(ElementKey.SHARE_WITH_EVERYONE,
                 AppiumBy.accessibilityId("With everyone, Anyone with this link can join this bubble."));
         mobile.put(ElementKey.COPY_STATUS_MESSAGE, By.id("com.ale.rainbow:id/snackbar_text"));
-
-        mobile.put(ElementKey.SELECT_LANGUAGE, AppiumBy.androidUIAutomator("new UiSelector().resourceId(\"com.ale.rainbow:id/drop_down\")"));
 
         mobile.put(ElementKey.MANAGE_RASE_HAND,
                 AppiumBy.accessibilityId("Manage raised hands"));

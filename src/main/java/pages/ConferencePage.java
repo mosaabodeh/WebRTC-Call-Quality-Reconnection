@@ -57,14 +57,12 @@ public class ConferencePage extends BasePage{
 
         String expectedName = name.trim();
         String normalizedExpectedRole = expectedRole.trim();
-
         for (WebElement participantButton : participantButtons) {
             String contentDesc = participantButton.getAttribute("content-desc");
 
             if (contentDesc == null || contentDesc.isBlank()) {
                 continue;
             }
-
             System.out.println("Participant content-desc: " + contentDesc);
 
             String actualName = ParticipantParserUtils.extractParticipantName(contentDesc);
@@ -152,7 +150,7 @@ public class ConferencePage extends BasePage{
         enableDelete();
         startRecording();
     String res=getRecordingMessage();
-    return res.contains(JsonReader.getTestData("ConferenceData.json", "recordWithTranscript").toLowerCase())&&isRecordingStarted();
+    return res.contains(JsonReader.getTestData("ConferenceData.json", "recordWithTranscript"))&&isRecordingStarted();
     }
 
     public void stopRecording() {

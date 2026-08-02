@@ -185,7 +185,6 @@ public class ConferenceCallTest extends BaseTest {
         dashboardAInstance.MissedContact(nameB);
         notification.sendAppToBackground();
         conA.missCall();
-
         Assert.assertTrue(notification.isMissedCallNotificationDisplayed( nameC),
                 "Missed call notification was not received while app is in background");
 
@@ -195,13 +194,14 @@ public class ConferenceCallTest extends BaseTest {
     @Test(priority = 22, description = "User should receive a missed call notification when the app is terminated")
     public void testVerifyMissedCallNotificationAppTerminated() {
         establishBaseCall();
-        notification.terminateApp("com.ale.rainbow");
         dashboardAInstance.MissedContact(nameB);
+        notification.terminateApp("com.ale.rainbow");
         conA.missCall();
-//with changes
+
         try {
-            Assert.assertTrue(notification.isMissedCallNotificationDisplayed( nameC),
-                    "Missed call notification was not received while app is terminated");
+            boolean isNotificationReceived = notification.isMissedCallNotificationDisplayed(nameC);
+            Assert.assertTrue(isNotificationReceived,
+                    "Missed call notification from " + nameC + " was not displayed while app was terminated.");
         } finally {
             notification.activateApp( "com.ale.rainbow");
         }

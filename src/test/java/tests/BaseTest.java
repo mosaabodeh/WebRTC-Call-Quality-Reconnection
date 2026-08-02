@@ -33,25 +33,33 @@ public class BaseTest {
     private static final Logger logger = LoggerFactory.getLogger(BaseTest.class);
     protected static AppiumDriverLocalService appiumServer;
     private static String appPackage;
-    NetworkHelper helperMethodeNetwork= new NetworkHelper();
+    NetworkHelper helperMethodeNetwork = new NetworkHelper();
 
     protected final ThreadLocal<CallPage> callA = new ThreadLocal<>();
     protected final ThreadLocal<CallPage> callB = new ThreadLocal<>();
-    ConferencePage conA ;
-    ConferencePage conB ;
+    ConferencePage conA;
+    ConferencePage conB;
     RaseHandPage resA;
     RaseHandPage rasB;
     TalkingTimePage talkA;
     NotificationUtils notification;
-
-
     ChromeNavigationUtils chromeNavigation;
-    protected String emailA, passwordA, emailB, passwordB, nameB,nameC, udidB;
+
+    protected String emailA, passwordA, emailB, passwordB, nameB, nameC, udidB;
     protected DashboardPage dashboardAInstance;
+
+    private static long endCallTimeoutSec;
+    private static long terminateTimeoutSec;
+    private static long overallCleanupTimeoutSec;
 
     @BeforeClass
     public void setUpDevices() {
         appPackage = ConfigReader.getProperty("app.package");
+
+        endCallTimeoutSec = Long.parseLong(ConfigReader.getProperty("cleanup.callEnd.timeoutSeconds", "3"));
+        terminateTimeoutSec = Long.parseLong(ConfigReader.getProperty("cleanup.appTerminate.timeoutSeconds", "7"));
+        overallCleanupTimeoutSec = Long.parseLong(ConfigReader.getProperty("cleanup.overall.timeoutSeconds", "10"));
+
         List<String> connectedUdids = getPhysicallyConnectedDevices();
         logger.info("Devices physically connected to host: {}", connectedUdids);
 
@@ -128,8 +136,8 @@ public class BaseTest {
     @BeforeMethod
     public void startAppBeforeTest() {
 
-        AndroidDriver driverA = DeviceManager.getDriverA();
-        AndroidDriver driverB = DeviceManager.getDriverB();
+        AndroidDriver driverA = ensureLiveDriver(DeviceManager.getDriverA(), "A");
+        AndroidDriver driverB = ensureLiveDriver(DeviceManager.getDriverB(), "B");
 
         if (driverA != null) {
             launchApp(driverA);
@@ -144,6 +152,47 @@ public class BaseTest {
         }
     }
 
+    private AndroidDriver ensureLiveDriver(AndroidDriver driver, String label) {
+        if (driver == null) {
+            return null;
+        }
+        try {
+            driver.getPageSource(); // cheap call; throws if instrumentation is dead
+            return driver;
+        } catch (Exception e) {
+            logger.error("Instrumentation appears dead on Device {}. Recreating session...", label, e);
+            try {
+                driver.quit();
+            } catch (Exception ignored) {
+                // already dead; nothing to clean up
+            }
+
+            DeviceConfig config = DriverFactory.loadConfig(label);
+            Duration implicitWait = Duration.ofSeconds(
+                    Long.parseLong(ConfigReader.getProperty("implicit.wait", "0")));
+
+            try {
+                AndroidDriver fresh = DriverFactory.create(config, appiumServer.getUrl(), implicitWait);
+                if (label.equals("A")) {
+                    DeviceManager.setDriverA(fresh);
+                } else {
+                    DeviceManager.setDriverB(fresh);
+                }
+                logger.info("Device {} session successfully recreated after instrumentation crash.", label);
+                return fresh;
+            } catch (Exception recreateFailure) {
+                logger.error("Failed to recreate Device {} after instrumentation crash. Test will proceed without it.",
+                        label, recreateFailure);
+                if (label.equals("A")) {
+                    DeviceManager.setDriverA(null);
+                } else {
+                    DeviceManager.setDriverB(null);
+                }
+                return null;
+            }
+        }
+    }
+
     @BeforeMethod
     public void loadCommonTestData() {
         emailA = JsonReader.getTestData("LoginData.json", "UserA", "email");
@@ -152,7 +201,6 @@ public class BaseTest {
         passwordB = JsonReader.getTestData("LoginData.json", "UserB", "password");
         nameB = JsonReader.getTestData("LoginData.json", "UserB", "Name");
         nameC = JsonReader.getTestData("LoginData.json", "UserA", "Name");
-
 
         udidB = ConfigReader.getProperty("device.B.udid");
     }
@@ -164,13 +212,14 @@ public class BaseTest {
         if (driverA == null || driverB == null) {
             throw new IllegalStateException("❌ No devices are connected in the current thread context.");
         }
-        conA=new ConferencePage(driverA);
-        conB=new ConferencePage(driverB);
-        resA=new RaseHandPage(driverA);
-        rasB=new RaseHandPage(driverB);
-        talkA=new TalkingTimePage(driverA);
-        chromeNavigation=new ChromeNavigationUtils(driverB);
-        notification=new NotificationUtils(driverB);
+        conA = new ConferencePage(driverA);
+        conB = new ConferencePage(driverB);
+        resA = new RaseHandPage(driverA);
+        rasB = new RaseHandPage(driverB);
+        talkA = new TalkingTimePage(driverA);
+        chromeNavigation = new ChromeNavigationUtils(driverB);
+        notification = new NotificationUtils(driverB);
+
         List<CompletableFuture<Void>> loginTasks = new ArrayList<>();
 
         loginTasks.add(CompletableFuture.runAsync(() -> {
@@ -196,20 +245,38 @@ public class BaseTest {
     protected void audioCall() {
         dashboardAInstance.callContact(nameB);
         callB.get().answerCallAndConfirmStable();
-}
+    }
+
     @AfterMethod(alwaysRun = true)
     public void cleanUpAfterTestMethod() {
-        logger.info("Test method execution finished. Resetting application states in parallel...");
+        logger.info("Test method execution finished. Resetting application states...");
+
+        List<CompletableFuture<Void>> endCallTasks = new ArrayList<>();
 
         if (callB.get() != null) {
-            CompletableFuture.runAsync(() -> {
-                try { callB.get().endCallSilently(); } catch (Exception ignored) {}
-            }).orTimeout(3, TimeUnit.SECONDS).exceptionally(ex -> null);
+            endCallTasks.add(CompletableFuture.runAsync(() -> {
+                try {
+                    callB.get().endCallSilently();
+                } catch (Exception ignored) {
+                }
+            }).orTimeout(endCallTimeoutSec, TimeUnit.SECONDS).exceptionally(ex -> null));
         }
         if (callA.get() != null) {
-            CompletableFuture.runAsync(() -> {
-                try { callA.get().endCallSilently(); } catch (Exception ignored) {}
-            }).orTimeout(3, TimeUnit.SECONDS).exceptionally(ex -> null);
+            endCallTasks.add(CompletableFuture.runAsync(() -> {
+                try {
+                    callA.get().endCallSilently();
+                } catch (Exception ignored) {
+                }
+            }).orTimeout(endCallTimeoutSec, TimeUnit.SECONDS).exceptionally(ex -> null));
+        }
+
+        if (!endCallTasks.isEmpty()) {
+            try {
+                CompletableFuture.allOf(endCallTasks.toArray(new CompletableFuture[0]))
+                        .get(endCallTimeoutSec + 1, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                logger.warn("End-call cleanup did not complete cleanly, proceeding to termination anyway: {}", e.getMessage());
+            }
         }
 
         AndroidDriver driverA = DeviceManager.getDriverA();
@@ -225,7 +292,7 @@ public class BaseTest {
                 } catch (Exception e) {
                     logger.warn("Error during Device A cleanup thread: {}", e.getMessage());
                 }
-            }).orTimeout(7, TimeUnit.SECONDS));
+            }).orTimeout(terminateTimeoutSec, TimeUnit.SECONDS));
         }
 
         if (driverB != null) {
@@ -237,21 +304,22 @@ public class BaseTest {
                 } catch (Exception e) {
                     logger.warn("Error during Device B cleanup thread: {}", e.getMessage());
                 }
-            }).orTimeout(7, TimeUnit.SECONDS));
+            }).orTimeout(terminateTimeoutSec, TimeUnit.SECONDS));
         }
 
         if (!cleanupTasks.isEmpty()) {
             try {
                 CompletableFuture.allOf(cleanupTasks.toArray(new CompletableFuture[0]))
-                        .get(10, TimeUnit.SECONDS);
+                        .get(overallCleanupTimeoutSec, TimeUnit.SECONDS);
             } catch (Exception e) {
                 logger.warn("Some cleanup tasks timed out or failed, forcing continuation: {}", e.getMessage());
             }
         }
         callA.remove();
         callB.remove();
-        logger.info("Parallel cleanup finished successfully.");
+        logger.info("Cleanup finished.");
     }
+
     protected void prepareConference() {
         establishBaseCall();
         audioCall();
@@ -289,7 +357,7 @@ public class BaseTest {
         }
     }
 
-    private void launchApp(AndroidDriver driver) {
+    void launchApp(AndroidDriver driver) {
         if (driver != null) {
             try {
                 driver.activateApp(appPackage);
@@ -299,7 +367,7 @@ public class BaseTest {
         }
     }
 
-    private void terminateAppSafely(AndroidDriver driver) {
+    void terminateAppSafely(AndroidDriver driver) {
         if (driver != null) {
             try {
                 logger.info("Closing application: {}", appPackage);
@@ -319,8 +387,6 @@ public class BaseTest {
             }
         }
     }
-
-
 
     private List<String> getPhysicallyConnectedDevices() {
         List<String> connectedUdids = new ArrayList<>();
@@ -342,7 +408,6 @@ public class BaseTest {
         }
         return connectedUdids;
     }
-
 
     private CompletableFuture<AndroidDriver> initializeDevice(DeviceConfig config, URL serverUrl,
                                                               Duration implicitWait, long startDelayMs) {

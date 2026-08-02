@@ -53,7 +53,6 @@ public class BasePage {
 
         try {
             androidDriver.openNotifications();
-            Thread.sleep(1000);
             By callNotificationLocator = AppiumBy.xpath(
                     "//*[@package='com.ale.rainbow' or contains(@text, 'Audio call') or contains(@text, 'Return to call')]"
             );
@@ -64,7 +63,6 @@ public class BasePage {
             tapParams.put("x", centerX);
             tapParams.put("y", centerY);
             androidDriver.executeScript("mobile: clickGesture", tapParams);
-            Thread.sleep(1000);
 
         } catch (Exception e) {
             androidDriver.pressKey(new KeyEvent(AndroidKey.BACK));
@@ -79,7 +77,6 @@ public class BasePage {
         androidDriver.pressKey(new KeyEvent(AndroidKey.BACK));
     }
     protected WebElement waitClickable(By locator) {
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
         return wait.until(ExpectedConditions.elementToBeClickable(locator));
     }
 
@@ -108,6 +105,7 @@ public class BasePage {
         driver.executeScript("mobile: clickGesture", tapParams);
         System.out.println("Clicked Join button at: X=" + x + ", Y=" + y);
     }
+
     public void clickButtonByCoordinates(By ele) {
         waiteForTime(2);
         WebElement clickedElementButton = waitVisible(ele);

@@ -63,11 +63,9 @@ public class ToastOcrHandler {
                             .replace("\n", " ")
                             .replaceAll("\\s+", " ")
                             .trim();
-
             if (lastSeenText.contains(expectedLower)) {
                 return true;
             }
-
             try {
                 Thread.sleep(pollIntervalMillis);
             } catch (InterruptedException e) {
