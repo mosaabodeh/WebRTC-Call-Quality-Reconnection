@@ -25,7 +25,7 @@ public class ConferencePage extends BasePage{
     public boolean isSharingScreen() {
         System.out.println("inside the is sharing function");
         try {
-            boolean isDisplayed = waitVisible(ElementRegistry.get(ElementKey.SHARE_SCREEN_APPEAR)).isDisplayed();
+            boolean isDisplayed = isDisplayed(ElementRegistry.get(ElementKey.SHARE_SCREEN_APPEAR));
             if (!isDisplayed) {
                 return false;
             }
@@ -97,7 +97,7 @@ public class ConferencePage extends BasePage{
                     "//*[contains(translate(@content-desc, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '%s') " +
                             "or contains(translate(@text, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '%s')]",
                     nameLower, nameLower);
-            return waitVisible((AppiumBy.xpath(xpath))).isDisplayed();
+            return isDisplayed(AppiumBy.xpath(xpath));
 
         } catch (TimeoutException | NoSuchElementException  e) {
             return false;
@@ -137,7 +137,7 @@ public class ConferencePage extends BasePage{
     }
 
    private  boolean isRecordingStarted(){
-        return waitVisible(ElementRegistry.get(ElementKey.RECORD_INDICATOR)).isDisplayed();
+        return isDisplayed(ElementRegistry.get(ElementKey.RECORD_INDICATOR));
    }
 
   private String getRecordingMessage(){
@@ -178,7 +178,7 @@ public class ConferencePage extends BasePage{
         waitClickable(ElementRegistry.get(ElementKey.LOCK_MEETING)).click();
         waitClickable(ElementRegistry.get(ElementKey.START_OK_APPLY)).click();
 
-        boolean flag = waitVisible(ElementRegistry.get(ElementKey.MEETING_LOCK)).isDisplayed();
+        boolean flag = isDisplayed(ElementRegistry.get(ElementKey.MEETING_LOCK));
         boolean toastAppeared = ToastOcrHandler.waitForToastContaining(driver,
                 JsonReader.getTestData("ConferenceData.json", "meetingLocked").toLowerCase(), 5, 500);
         return flag && toastAppeared;
@@ -239,7 +239,7 @@ public class ConferencePage extends BasePage{
     }
     public boolean isShareScreenAppear(){
         try {
-            return waitVisible(ElementRegistry.get(ElementKey.SHARE_SCREEN_GRID)).isDisplayed();
+            return isDisplayed(ElementRegistry.get(ElementKey.SHARE_SCREEN_GRID));
         } catch (Exception e) {
             return false;
         }    }
