@@ -43,6 +43,7 @@ public class ConferenceCallTest extends BaseTest {
     public void testCountOfRaisingHand()   {
         prepareConference();
         rasB.raisHand();
+        resA.raisHand();
         Assert.assertTrue(resA.isTheCounterOfRaisHAndAccurate(), "The Count of Rais hand dose not correct.");
     }
 
