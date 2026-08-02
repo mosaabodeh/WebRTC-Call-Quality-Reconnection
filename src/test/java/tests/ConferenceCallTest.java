@@ -87,18 +87,21 @@ public class ConferenceCallTest extends BaseTest {
     }
 
     @Test(priority = 12, description = "User should see valid talking time for first and second participants")
-    public void testTalkingTime()   {
+    public void testTalkingTime() {
         prepareConference();
-        String localAudioPath =  System.getProperty("user.dir") + "/src/test/resources/audio/25 secondVoiceRecord.mp3";
-        AudioUtils.startAudio(localAudioPath);
-        conB. muteFor(5);
-        conA. muteFor(4);
-        conB. speakFor(3);
+        String localAudioPath = System.getProperty("user.dir") + "/src/test/resources/audio/25 secondVoiceRecord.mp3";
+
+        AudioUtils.startAudioAndAwaitStart(localAudioPath);
+
+        conB.muteFor(2);
+        conA.speakFor(3);
+        conB.speakFor(3);
 
         talkA.openTalkingTimeScreen();
         AudioUtils.stopAudio();
-        Assert.assertNotEquals(talkA.getParticipantTime(1),"00:00","First participant talking time is invalid.");
-        Assert.assertNotEquals(talkA.getParticipantTime(2),"00:00","Second participant talking time is invalid.");
+
+        Assert.assertNotEquals(talkA.getParticipantTime(1), "00:00", "First participant talking time is invalid.");
+        Assert.assertNotEquals(talkA.getParticipantTime(2), "00:00", "Second participant talking time is invalid.");
     }
 
     @Test(priority = 13,description = "user should be able to change The Conference Preferences as he want Mute Enter enter and Play Sound ")

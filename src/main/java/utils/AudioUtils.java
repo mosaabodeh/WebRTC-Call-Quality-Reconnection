@@ -1,13 +1,9 @@
 package utils;
 
-import io.appium.java_client.android.AndroidDriver;
 import javazoom.jl.player.Player;
 import javax.sound.sampled.*;
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public class AudioUtils {
@@ -16,10 +12,20 @@ public class AudioUtils {
     private static volatile Player activePlayer;
     private static volatile Process activeProcess;
 
+    public static class PlaybackHandle {
+        public final CompletableFuture<Void> started;
+        public final CompletableFuture<Void> finished;
 
-    public static synchronized CompletableFuture<Void> startAudio(String localAudioFilePath) {
+        public PlaybackHandle(CompletableFuture<Void> started, CompletableFuture<Void> finished) {
+            this.started = started;
+            this.finished = finished;
+        }
+    }
+
+    public static synchronized PlaybackHandle startAudio(String localAudioFilePath) {
         stopAudio();
 
+        CompletableFuture<Void> started = new CompletableFuture<>();
         CompletableFuture<Void> finished = new CompletableFuture<>();
 
         new Thread(() -> {
@@ -28,6 +34,7 @@ public class AudioUtils {
 
                 if (!audioFile.exists()) {
                     System.err.println("Audio file not found at: " + audioFile.getAbsolutePath());
+                    started.complete(null);
                     finished.complete(null);
                     return;
                 }
@@ -38,6 +45,9 @@ public class AudioUtils {
                     activeClip = clip;
 
                     clip.addLineListener(event -> {
+                        if (event.getType() == LineEvent.Type.START) {
+                            started.complete(null);
+                        }
                         if (event.getType() == LineEvent.Type.STOP) {
                             finished.complete(null);
                         }
@@ -47,21 +57,20 @@ public class AudioUtils {
                     clip.start();
 
                 } else if (localAudioFilePath.endsWith(".mp3")) {
-                    // Pure-Java MP3 decode/playback — play() is synchronous and only
-                    // returns when the track truly ends (or close() is called), so
-                    // it's not dependent on any OS media app's process lifecycle.
+
                     try (FileInputStream fis = new FileInputStream(audioFile)) {
                         Player player = new Player(fis);
                         activePlayer = player;
-                        player.play(); // blocks this background thread until real end-of-audio
+
+
+                        started.complete(null);
+                        player.play();
                     }
                     activePlayer = null;
                     finished.complete(null);
 
                 } else {
-                    // Fallback for other formats (webm, etc.) via native OS player.
-                    // Note: on Windows this may return early for file-association-launched
-                    // apps, since "start /wait" only waits on the launcher stub.
+
                     String os = System.getProperty("os.name").toLowerCase();
                     Process process;
                     if (os.contains("mac")) {
@@ -73,21 +82,35 @@ public class AudioUtils {
                         process = new ProcessBuilder("paplay", audioFile.getAbsolutePath()).start();
                     }
                     activeProcess = process;
+
+                    started.complete(null);
                     process.waitFor();
                     finished.complete(null);
                 }
             } catch (Exception e) {
                 System.err.println("Failed to start/play audio: " + e.getMessage());
+                started.completeExceptionally(e);
                 finished.completeExceptionally(e);
             }
         }, "audio-playback-thread").start();
 
-        return finished;
+        return new PlaybackHandle(started, finished);
+    }
+
+
+    public static PlaybackHandle startAudioAndAwaitStart(String localAudioFilePath) {
+        PlaybackHandle handle = startAudio(localAudioFilePath);
+        try {
+            handle.started.join();
+        } catch (Exception e) {
+            System.err.println("Error waiting for playback to start: " + e.getMessage());
+        }
+        return handle;
     }
 
     public static void playAndWait(String localAudioFilePath) {
         try {
-            startAudio(localAudioFilePath).join();
+            startAudio(localAudioFilePath).finished.join();
         } catch (Exception e) {
             System.err.println("Audio playback error: " + e.getMessage());
         }
@@ -104,7 +127,7 @@ public class AudioUtils {
             }
 
             if (activePlayer != null) {
-                activePlayer.close(); // unblocks player.play() in the playback thread
+                activePlayer.close();
                 activePlayer = null;
             }
 
@@ -124,32 +147,5 @@ public class AudioUtils {
         }
     }
 
-    public static void pushAndPlayOnAndroid(AndroidDriver driver, String relativeResourcePath, String deviceFileName, String mimeType) {
-        String localPath = System.getProperty("user.dir") + relativeResourcePath;
-        File localFile = new File(localPath);
 
-        if (!localFile.exists()) {
-            System.err.println("Local audio file not found: " + localPath);
-            return;
-        }
-
-        String remotePath = "/sdcard/Download/" + deviceFileName;
-
-        try {
-            driver.pushFile(remotePath, localFile);
-
-            Map<String, Object> args = new HashMap<>();
-            args.put("command", "am");
-            args.put("args", Arrays.asList(
-                    "start",
-                    "-a", "android.intent.action.VIEW",
-                    "-d", "file://" + remotePath,
-                    "-t", mimeType
-            ));
-            driver.executeScript("mobile: shell", args);
-
-        } catch (Exception e) {
-            System.err.println("Failed to push and play audio on device: " + e.getMessage());
-        }
-    }
 }

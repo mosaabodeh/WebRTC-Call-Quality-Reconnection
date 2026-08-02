@@ -292,12 +292,20 @@ public class ConferencePage extends BasePage{
     waitClickable(ElementRegistry.get(ElementKey.COPY_BUTTON)).click();
     return ((HasClipboard) this.driver).getClipboardText();
 }
-    public void muteFor(double duration)   {
-        waitClickable(ElementRegistry.get(ElementKey.MUTE_BUTTON)).click();
+    public boolean isCurrentlyMuted() {
+        return isDisplayed(ElementRegistry.get(ElementKey.UNMUTE_BUTTON));
+    }
+    public void muteFor(double duration) {
+        if (!isCurrentlyMuted()) {
+            waitClickable(ElementRegistry.get(ElementKey.MUTE_BUTTON)).click();
+        }
         waiteForTime(duration);
     }
-    public void speakFor(double duration)   {
-        waitClickable(ElementRegistry.get(ElementKey.UNMUTE_BUTTON)).click();
+
+    public void speakFor(double duration) {
+        if (isCurrentlyMuted()) {
+            waitClickable(ElementRegistry.get(ElementKey.UNMUTE_BUTTON)).click();
+        }
         waiteForTime(duration);
         muteFor(0);
     }
