@@ -11,7 +11,6 @@ import utils.*;
 
 import java.util.List;
 
-import static pages.CallPage.waiteForTime;
 
 public class ConferencePage extends BasePage{
     public ConferencePage(AppiumDriver driver) {
@@ -185,13 +184,8 @@ public class ConferencePage extends BasePage{
     public boolean isConferenceLocked()   {
         clickButtonByCoordinates(ElementRegistry.get(ElementKey.LIVE_BUTTON_COORDINATE));
         clickJoinButton();
-        boolean isLocked = ToastOcrHandler.waitForToastContaining(
-                driver,
-                JsonReader.getTestData("ConferenceData.json", "userLocked").toLowerCase(),
-                5,
-                500
-        );
-        return isLocked;
+        return ToastOcrHandler.waitForToastContaining(driver, JsonReader.getTestData("ConferenceData.json", "userLocked").toLowerCase(),
+                5, 500);
     }
     public String verifySharingLinkStander(){
         meetingOption();
