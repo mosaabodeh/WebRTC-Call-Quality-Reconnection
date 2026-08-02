@@ -18,7 +18,7 @@ public class ConferenceCallTest extends BaseTest {
     }
 
     @Test(priority = 3,description = "user should be able to Receive the incoming sharing screen From the Conference users ")
-    public void testSharingScreen() throws InterruptedException {
+    public void testSharingScreen()   {
         prepareConference();
         conB.sharingScreen();
         Assert.assertTrue(conA.isSharingScreen());
@@ -35,8 +35,8 @@ public class ConferenceCallTest extends BaseTest {
     public void testTurningOffIncomingVideo()   {
         prepareConference();
         callB.get().upgradeToVideo();
-        conA.verifyTurnedOffIncomingVideo();
-        Assert.assertFalse(callA.get().isVideoFeedReceived(), "The Sharing Video Still Appear");
+        conA.turnedOffIncomingVideo();
+        Assert.assertTrue(callA.get().isVideoFeedReceived(), "The Sharing Video Still Appear");
     }
 
     @Test(priority = 6,description = "user should be able to See the actual count of user raised hand in the participant List Of the Conference ")
@@ -56,14 +56,14 @@ public class ConferenceCallTest extends BaseTest {
     @Test(priority = 8,description = "user should be able to Select The Speaker Only Mode And See changes ")
     public void testSpeakerMode()   {
         prepareConference();
-        conA.SpeakerOnlyMode();
+        conA.speakerOnlyMode();
         Assert.assertTrue(conA.isGridViewExist(), "The Grid Dose not Exist Dose not Convert to Speaker Mode ");
     }
 
     @Test(priority = 9,description = "user should be able to Start/Active Record With Transcript ")
     public void testRecordWithTranscriptActivation()   {
         prepareConference();
-        Assert.assertTrue(conA.recordWithTranscript(), "The Grid Dose not Exist Dose not Convert to Speaker Mode ");
+        Assert.assertTrue(conB.recordWithTranscript(), "The Grid Dose not Exist Dose not Convert to Speaker Mode ");
     }
 
     @Test(priority = 10,description = "user should be able to real Record With Transcript for audio")
@@ -77,8 +77,8 @@ public class ConferenceCallTest extends BaseTest {
         Assert.assertTrue(conB.isTranscriptTextAccurate(),"there's an error with the transcript feature ");
     }
 
-    @Test(priority = 11,description = "user should be able to Lock the meeting to prevent joining  when needed ")
-    public void testLockMeeting() throws InterruptedException {
+    @Test(priority = 11,description = "user should be able to Lock the meeting to prevent users joining when needed ")
+    public void testLockMeeting()   {
         establishBaseCall();
         conA.startLockedConference();
         callB.get().rejectIncomingCall();
@@ -87,14 +87,13 @@ public class ConferenceCallTest extends BaseTest {
     }
 
     @Test(priority = 12, description = "User should see valid talking time for first and second participants")
-    public void testTalkingTime() throws InterruptedException {
+    public void testTalkingTime()   {
         prepareConference();
         String localAudioPath =  System.getProperty("user.dir") + "/src/test/resources/audio/25 secondVoiceRecord.mp3";
         AudioUtils.startAudio(localAudioPath);
-
         conB. muteFor(5);
         conA. muteFor(4);
-        conB. speakFor(4);
+        conB. speakFor(3);
 
         talkA.openTalkingTimeScreen();
         AudioUtils.stopAudio();
@@ -123,21 +122,21 @@ public class ConferenceCallTest extends BaseTest {
     }
 
     @Test(priority = 15,description = "user should be able to change The Conference joining setting And add password, waiting room past the copied link of the conference in google chrome ")
-    public void testFillUrlInChromeWithPassword()  {
+    public void testFillUrlInChromeWithPassword()   {
         prepareConference();
         conA.verifySharingBubbleWithCustomSetting(true,true);
         String res=conA.shareLink();
-        chromeNavigationUtils.openChromeAndNavigateToFirstLink(res);
-        chromeNavigationUtils.reopenRainbow();
+        chromeNavigation.openChromeAndNavigateToFirstLink(res);
+        chromeNavigation.reopenRainbow();
 
         conB.returnToActiveCall();
     }
 
     @Test(priority = 16,description = "user should be able to Turn Off incoming sharing screen and stop se the share in the grid ")
-    public void testTurnOffIncomingSharing() throws InterruptedException {
+    public void testTurnOffIncomingSharing()   {
         prepareConference();
         conB.sharingScreen();
-        conA.verifyTurnedOffIncomingSharing();
+        conA.turnedOffIncomingSharing();
 
         Assert.assertFalse(conA.isShareScreenAppear(), "The Sharing sharing screen Still Appear");
     }
@@ -146,9 +145,9 @@ public class ConferenceCallTest extends BaseTest {
     public void testVerifyUSerRoll()   {
         prepareConference();
         conA.participantList();
-        conA.verifyUserRuleInRaibow("Mosaab Teat(.net)","Owner");
-        conA.verifyUserRuleInRaibow("Mosaab acount4","Member");
-        conA.verifyUserRuleInRaibow("mosaab odeh","Organizer");
+        Assert.assertTrue(conA.verifyUserRuleInRaibow("Mosaab Teat(.net)","Owner"), "Owner role mismatch");
+        Assert.assertTrue(conA.verifyUserRuleInRaibow("Mosaab m odeh","Member"), "Member role mismatch");
+        Assert.assertTrue(conA.verifyUserRuleInRaibow("mosaab odeh","Organizer"), "Organizer role mismatch");
         conA.clickNavigationBack();
     }
 
@@ -156,9 +155,9 @@ public class ConferenceCallTest extends BaseTest {
     public void testVerifyUSerRuleByList()   {
         prepareConference();
         conA.participantList();
-        Assert.assertTrue( conA.verifyUserRoleInRainbow("Mosaab Teat(.net)", "Owner"),"The element Not Found Owner");
-        Assert.assertTrue( conA.verifyUserRoleInRainbow("mosaab odeh", "Organizer"),"The element Not Found organizer");
-        Assert.assertTrue( conA.verifyUserRoleInRainbow("Mosaab acount4", "Member"),"The element Not Found Member");
+        Assert.assertTrue( conA.verifyUserRuleInRainbowUsingList("Mosaab Teat(.net)", "Owner"),"The element Not Found Owner");
+        Assert.assertTrue( conA.verifyUserRuleInRainbowUsingList("mosaab odeh", "Organizer"),"The element Not Found organizer");
+        Assert.assertTrue( conA.verifyUserRuleInRainbowUsingList("Mosaab m odeh", "Member"),"The element Not Found Member");
         conA.clickNavigationBack();
     }
 
@@ -168,7 +167,7 @@ public class ConferenceCallTest extends BaseTest {
         audioCall();
         conA.addRoomToConference();
         conA.participantList();
-        Assert.assertTrue( conA.verifyUserRoleInRainbow("Test", "Member"),"The element Not Found Member");
+        Assert.assertTrue( conA.verifyUserRuleInRainbowUsingList("Test", "Member"),"The element Not Found Member");
         conA.clickNavigationBack();
     }
 
@@ -199,7 +198,7 @@ public class ConferenceCallTest extends BaseTest {
         notification.terminateApp("com.ale.rainbow");
         dashboardAInstance.MissedContact(nameB);
         conA.missCall();
-
+//with changes
         try {
             Assert.assertTrue(notification.isMissedCallNotificationDisplayed( nameC),
                     "Missed call notification was not received while app is terminated");

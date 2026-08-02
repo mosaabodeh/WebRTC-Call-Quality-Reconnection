@@ -50,7 +50,35 @@ public class ToastOcrHandler {
             return "";
         }
     }
+    public static boolean waitForToastContaining(AppiumDriver driver, String expectedText, int timeoutSeconds, int pollIntervalMillis) {
+        long deadline = System.currentTimeMillis() + (timeoutSeconds * 1000L);
+        String lastSeenText = "";
+        String expectedLower = expectedText.toLowerCase();
 
+        while (System.currentTimeMillis() < deadline) {
+            String text = ToastOcrHandler.captureAndReadToast(driver);
+            lastSeenText = (text == null) ? "" :
+                    text.toLowerCase()
+                            .replace("\r", " ")
+                            .replace("\n", " ")
+                            .replaceAll("\\s+", " ")
+                            .trim();
+
+            if (lastSeenText.contains(expectedLower)) {
+                return true;
+            }
+
+            try {
+                Thread.sleep(pollIntervalMillis);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+
+        System.err.println("Toast not matched. Expected: '" + expectedText + "', Last OCR read: '" + lastSeenText + "'");
+        return false;
+    }
     public static String captureAndReadMissedCallBanner(AppiumDriver driver) {
         Tesseract tesseract = new Tesseract();
 

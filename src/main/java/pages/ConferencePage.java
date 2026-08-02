@@ -1,5 +1,4 @@
 package pages;
-import drivers.DeviceManager;
 import io.appium.java_client.AppiumBy;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
@@ -9,32 +8,33 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import pages.locators.ElementKey;
 import pages.locators.ElementRegistry;
-import utils.NotificationUtils;
-import utils.SummaryValidator;
-import utils.ToastOcrHandler;
+import utils.*;
 
 import java.time.Duration;
 import java.util.List;
 
-import static pages.CallPage.WaiteForTime;
+import static pages.CallPage.waiteForTime;
 
 public class ConferencePage extends BasePage{
     public ConferencePage(AppiumDriver driver) {
         super(driver);
     }
-    public void sharingScreen() throws InterruptedException {
-        WaiteForTime(3);
+    public void sharingScreen()   {
+        waiteForTime(3);
         waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
         waitClickable(ElementRegistry.get(ElementKey.SHARE_SCREEN_BUTTON)).click();
         waitClickable(ElementRegistry.get(ElementKey.START_OK_APPLY)).click();
     }
-    public boolean isSharingScreen()  {
+    public boolean isSharingScreen() {
         System.out.println("inside the is sharing function");
-         waitVisible(ElementRegistry.get(ElementKey.SHARE_SCREEN_APPEAR)).isDisplayed();
         try {
+            boolean isDisplayed = waitVisible(ElementRegistry.get(ElementKey.SHARE_SCREEN_APPEAR)).isDisplayed();
+            if (!isDisplayed) {
+                return false;
+            }
             waitClickable(ElementRegistry.get(ElementKey.VIEW_FULL_SHARING_SCREEN)).click();
             return true;
-        } catch (Exception e) {
+        } catch (TimeoutException e) {
             return false;
         }
     }
@@ -45,16 +45,15 @@ public class ConferencePage extends BasePage{
     }
 
     public boolean isMutedToastAppear() {
-        return getToastMessage().contains("You are muted");
+        return ToastOcrHandler.waitForToastContaining(driver, JsonReader.getTestData("ConferenceData.json", "userMuted"), 5, 500);
     }
     public void participantList(){
         waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
         waitClickable(ElementRegistry.get(ElementKey.PARTICIPANT_LIST)).click();
     }
-    public boolean verifyUserRoleInRainbow(String name, String expectedRole) {
+    public boolean verifyUserRuleInRainbowUsingList(String name, String expectedRole) {
 
-        WebElement participantsList = driver.findElement(
-                AppiumBy.id("com.ale.rainbow:id/room_participants_recyclerview"));
+        WebElement participantsList = waitVisible(ElementRegistry.get(ElementKey.PARTICIPANTS_RECYCLER_VIEW));
 
         List<WebElement> participantButtons = participantsList.findElements(
                 AppiumBy.className("android.widget.Button"));
@@ -71,53 +70,18 @@ public class ConferencePage extends BasePage{
 
             System.out.println("Participant content-desc: " + contentDesc);
 
-            String actualName = extractParticipantName(contentDesc);
+            String actualName = ParticipantParserUtils.extractParticipantName(contentDesc);
             // Exact name comparison
             if (!actualName.equalsIgnoreCase(expectedName)) {
                 continue;
             }
-            String actualRole = determineParticipantRole(participantButton,contentDesc);
+            String actualRole = ParticipantParserUtils.determineParticipantRole(participantButton,contentDesc);
             boolean roleMatches =actualRole.equalsIgnoreCase(normalizedExpectedRole);
 
             return roleMatches;
         }
 
         System.out.println("Participant not found: " + expectedName);
-        return false;
-    }
-    private String extractParticipantName(String contentDesc) {
-
-        int firstCommaIndex = contentDesc.indexOf(",");
-
-        if (firstCommaIndex == -1) {
-            return contentDesc.trim();
-        }
-
-        return contentDesc.substring(0, firstCommaIndex).trim();
-    }
-
-    private String determineParticipantRole(
-            WebElement participantButton,
-            String contentDesc) {
-
-        if (containsExactRole(contentDesc, "Owner")) {
-            return "Owner";
-        }
-
-        if (containsExactRole(contentDesc, "Organizer")) {
-            return "Organizer";
-        }
-
-        // A member has no Owner or Organizer role icon
-        return "Member";
-    }
-    private boolean containsExactRole(String contentDesc, String role) {
-        String[] parts = contentDesc.split(",");
-        for (String part : parts) {
-            if (part.trim().equalsIgnoreCase(role)) {
-                return true;
-            }
-        }
         return false;
     }
 
@@ -138,14 +102,13 @@ public class ConferencePage extends BasePage{
                     "//*[contains(translate(@content-desc, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '%s') " +
                             "or contains(translate(@text, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '%s')]",
                     nameLower, nameLower);
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(5));
-            return wait.until(ExpectedConditions.visibilityOfElementLocated(AppiumBy.xpath(xpath))).isDisplayed();
+            return waitVisible((AppiumBy.xpath(xpath))).isDisplayed();
 
-        } catch (Exception e) {
+        } catch (TimeoutException | NoSuchElementException  e) {
             return false;
         }
 }
-   public void SpeakerOnlyMode(){
+   public void speakerOnlyMode(){
         waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
         waitClickable(ElementRegistry.get(ElementKey.SPEAKER_ONLY_MODE)).click();
 
@@ -198,12 +161,14 @@ public class ConferencePage extends BasePage{
     public void stopRecording() {
         waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
         waitClickable(ElementRegistry.get(ElementKey.STOP_RECORDING)).click();
+        waitClickable(ElementRegistry.get(ElementKey.START_OK_APPLY)).click();
     }
 
-    public boolean isTranscriptTextAccurate() {
+    public boolean isTranscriptTextAccurate()   {
+          waiteForTime(10);
         new NotificationUtils((AndroidDriver) driver).clickFirstNotification();
         waitClickable(ElementRegistry.get(ElementKey.SUMMARY_COBY_BUTTON)).click();
-        String summaryResult = ((HasClipboard) driver).getClipboardText();
+        String summaryResult = ((HasClipboard) this.driver).getClipboardText();
         System.out.println("the Summary Result is : "+summaryResult);
         return isSummaryCorrect(summaryResult);
     }
@@ -217,13 +182,13 @@ public class ConferencePage extends BasePage{
 
         boolean flag = waitVisible(ElementRegistry.get(ElementKey.MEETING_LOCK)).isDisplayed();
         String res = getToastMessage();
-        return flag && res.toLowerCase().contains("you have locked the meeting");
+        return flag && res.toLowerCase().contains(JsonReader.getTestData("ConferenceData.json", "meetingLocked").toLowerCase());
     }
-    public boolean isConferenceLocked() throws InterruptedException {
-        clickButtonByCoordinates(AppiumBy.androidUIAutomator("new UiSelector().text(\"LIVE\")"));
+    public boolean isConferenceLocked()   {
+        clickButtonByCoordinates(ElementRegistry.get(ElementKey.LIVE_BUTTON_COORDINATE));
         clickJoinButton();
-        WaiteForTime(1.5);
-        String res=getErrorMessage();
+        waiteForTime(1.5);
+        String res=ToastOcrHandler.captureAndReadToast(driver);
         System.out.println("[" + res + "]");
         return res.contains(
                 "this conference has been locked, you are not allowed to enter the meeting.");
@@ -232,6 +197,7 @@ public class ConferencePage extends BasePage{
         meetingOption();
        return shareLink();
     }
+
   private void openMeetingSettings(){
       meetingOption();
        waitClickable(ElementRegistry.get(ElementKey.SHARE_BUTTON)).click();
@@ -244,34 +210,36 @@ public class ConferencePage extends BasePage{
     }
 
    private void enablePassword(){
-        scrollToBottom();
+       scrollToBottom();
         waitClickable(ElementRegistry.get(ElementKey.ROOM_PASSWORD)).click();
     }
 
    private void generatePassword(){
         waitClickable(ElementRegistry.get(ElementKey.REGENERATE_NEW_PASSWORD)).click();
-    }
-    public void verifySharingBubbleWithCustomSetting(boolean WaitingRoom,boolean protectedWithPassword){
-        openMeetingSettings();
+       waitClickable(ElementRegistry.get(ElementKey.START_OK_APPLY)).click();
 
-        if(WaitingRoom){
+
+   }
+    public boolean verifySharingBubbleWithCustomSetting(boolean waitingRoom,boolean protectedWithPassword)   {
+        openMeetingSettings();
+        if(waitingRoom){
             enableWaitingRoom();
         }
         if(protectedWithPassword){
             enablePassword();
-            scrollToBottom();
-            String old=clickAndCopyPassword();
+           scrollToBottom();
+            String oldPass=clickAndCopyPassword();
+             wait.until(ExpectedConditions.invisibilityOfElementLocated(ElementRegistry.get(ElementKey.COPY_STATUS_MESSAGE)));
             generatePassword();
             String newPass=clickAndCopyPassword();
-            if(old.equals(newPass))
-                System.out.println("The Password change result is : " + false);
-            else
-            System.out.println("The Password change result is : "+true);
+            return !oldPass.equals(newPass);
         }
+        return true;
     }
-    public void verifyTurnedOffIncomingVideo(){
+    public void turnedOffIncomingVideo(){
         waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
         waitClickable(ElementRegistry.get(ElementKey.TURN_OFF_INCOMING_VIDEO)).click();
+
     }
     public boolean isShareScreenAppear(){
         try {
@@ -279,7 +247,7 @@ public class ConferencePage extends BasePage{
         } catch (Exception e) {
             return false;
         }    }
-    public void verifyTurnedOffIncomingSharing()   {
+    public void turnedOffIncomingSharing()   {
         waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
         waitClickable(ElementRegistry.get(ElementKey.TURNOFF_INCOMING_SHARING)).click();
     }
@@ -324,22 +292,22 @@ public class ConferencePage extends BasePage{
         waitClickable(ElementRegistry.get(ElementKey.BUBBLES_TAB)).click();
         waitClickable(ElementRegistry.get(ElementKey.LAST_BUBBLE_CREATED)).click();
 
-        clickButtonByCoordinates(AppiumBy.accessibilityId("Call"));
+        clickButtonByCoordinates(ElementRegistry.get(ElementKey.CALL_BUTTON));
     }
     public String shareLink(){
     waitClickable(ElementRegistry.get(ElementKey.SHARE_BUTTON)).click();
     waitClickable(ElementRegistry.get(ElementKey.SHARE_LINK)).click();
     waitClickable(ElementRegistry.get(ElementKey.COPY_BUTTON)).click();
-    return DeviceManager.getDriverA().getClipboardText();
+    return ((HasClipboard) this.driver).getClipboardText();
 }
-    public void muteFor(double duration) throws InterruptedException {
+    public void muteFor(double duration)   {
         waitClickable(ElementRegistry.get(ElementKey.MUTE_BUTTON)).click();
-        WaiteForTime(duration);
+        waiteForTime(duration);
     }
-    public void speakFor(double duration) throws InterruptedException {
+    public void speakFor(double duration)   {
         waitClickable(ElementRegistry.get(ElementKey.UNMUTE_BUTTON)).click();
-        WaiteForTime(duration);
-        muteFor(0)  ;
+        waiteForTime(duration);
+        muteFor(0);
     }
 
     public boolean verifyUserRuleInRaibow(String name, String rule) {

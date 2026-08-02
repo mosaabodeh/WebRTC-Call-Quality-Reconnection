@@ -29,11 +29,9 @@ public class TalkingTimePage extends BasePage {
                         AppiumBy.id(DURATION_ID)));
     }
 
-
     public String getParticipantTime(int participantIndex) {
 
         List<WebElement> timers = getParticipantTimers();
-
         if (participantIndex < 1 || participantIndex > timers.size()) {
             throw new IllegalArgumentException(
                     String.format(
@@ -44,5 +42,6 @@ public class TalkingTimePage extends BasePage {
 
         return timers.get(participantIndex - 1).getText().trim();
     }
+
 
 }

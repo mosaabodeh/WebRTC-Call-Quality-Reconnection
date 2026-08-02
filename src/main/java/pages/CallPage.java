@@ -42,7 +42,7 @@ public class CallPage extends BasePage {
 
         try {
             String timeOne = waitVisible(ElementRegistry.get(ElementKey.CALL_TIMER)).getText();
-            WaiteForTime(1.2);
+            waiteForTime(1.2);
             String timeTwo = waitVisible(ElementRegistry.get(ElementKey.CALL_TIMER)).getText();
             return !timeOne.equals(timeTwo);
         } catch (Exception e) {
@@ -50,8 +50,10 @@ public class CallPage extends BasePage {
             return false;
         }
     }
-    protected static void WaiteForTime(double durationOfSecond) throws InterruptedException {
-        Thread.sleep(Duration.ofSeconds((long) durationOfSecond));
+    protected static void waiteForTime(double durationOfSecond)   {
+        try { Thread.sleep(Duration.ofSeconds((long) durationOfSecond)); } catch (InterruptedException ignored) {}
+
+
     }
 
     public String getCallStatus() {
@@ -157,7 +159,7 @@ public class CallPage extends BasePage {
     }
     public void toggleAirplaneMode(boolean turnOn) {
         try {
-            WaiteForTime(1.2);
+            waiteForTime(1.2);
             AndroidDriver androidDriver = (AndroidDriver) this.driver;
 
             if (turnOn) {

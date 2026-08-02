@@ -43,7 +43,6 @@ public class BaseTest {
     RaseHandPage rasB;
     TalkingTimePage talkA;
     NotificationUtils notification;
-    ChromeNavigationUtils chromeNavigationUtils;
 
 
     ChromeNavigationUtils chromeNavigation;
@@ -172,7 +171,6 @@ public class BaseTest {
         talkA=new TalkingTimePage(driverA);
         chromeNavigation=new ChromeNavigationUtils(driverB);
         notification=new NotificationUtils(driverB);
-        chromeNavigationUtils=new ChromeNavigationUtils(driverB);
         List<CompletableFuture<Void>> loginTasks = new ArrayList<>();
 
         loginTasks.add(CompletableFuture.runAsync(() -> {
@@ -257,13 +255,11 @@ public class BaseTest {
     protected void prepareConference() {
         establishBaseCall();
         audioCall();
-
         dashboardAInstance.addParticipantToCall(nameC);
 
         Assert.assertTrue(
                 conA.verifyAddedUserInParticipantList(nameC),
-                "Participant " + nameC + " was not added."
-        );
+                "Participant " + nameC + " was not added.");
 
         conA.clickNavigationBack();
     }

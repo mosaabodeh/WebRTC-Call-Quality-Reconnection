@@ -8,7 +8,7 @@
 
     <test name="Sign Up and Bubble Testing">
         <classes>
-            <class name="tests.WebRtcCallTest"/>
+            <class name="tests.ConferenceCallTest"/>
         </classes>
     </test>
 </suite>

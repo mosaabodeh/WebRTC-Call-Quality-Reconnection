@@ -14,6 +14,8 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import pages.locators.ElementKey;
+import pages.locators.ElementRegistry;
 import utils.ConfigReader;
 import utils.ToastOcrHandler;
 import java.time.Duration;
@@ -39,9 +41,7 @@ public class BasePage {
         }
     }
     public void scrollToBottom() {
-        driver.findElement(AppiumBy.androidUIAutomator(
-                "new UiScrollable(new UiSelector().scrollable(true)).scrollToEnd(10)"
-        ));
+        driver.findElement((ElementRegistry.get(ElementKey.SCROLL_TO_BUTTON)));
     }
     public void returnToActiveCall() {
         AndroidDriver androidDriver = (AndroidDriver) driver;
@@ -74,6 +74,7 @@ public class BasePage {
         androidDriver.pressKey(new KeyEvent(AndroidKey.BACK));
     }
     protected WebElement waitClickable(By locator) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
         return wait.until(ExpectedConditions.elementToBeClickable(locator));
     }
 

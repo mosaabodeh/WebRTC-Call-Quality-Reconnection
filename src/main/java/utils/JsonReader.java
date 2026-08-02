@@ -27,7 +27,10 @@ public class JsonReader {
             throw new RuntimeException("Failed to load JSON file: " + fileName, e);
         }
     }
-
+    public static String getTestData(String fileName, String key) {
+        JSONObject json = CACHE.computeIfAbsent(fileName, JsonReader::load);
+        return json.getString(key);
+    }
     public static String getTestData(String fileName, String section, String key) {
         JSONObject json = CACHE.computeIfAbsent(fileName, JsonReader::load);
         return json.getJSONObject(section).getString(key);

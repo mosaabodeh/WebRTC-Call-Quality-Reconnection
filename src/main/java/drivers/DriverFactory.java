@@ -30,14 +30,37 @@ public class DriverFactory {
             options.setAppActivity(appActivity);
         }
 
-        options.setCapability("appium:shouldTerminateApp", false);
-        options.setCapability("appium:noReset", true);
-        options.setCapability("appium:dontStopAppOnReset", true);
-        options.setCapability("appium:newCommandTimeout", 300);
-        options.setCapability("appium:autoGrantPermissions", true);
+        // Capabilities loaded dynamically from ConfigReader with default fallbacks
+        options.setCapability("appium:shouldTerminateApp",
+                getBooleanProperty("appium.shouldTerminateApp", false));
+        options.setCapability("appium:noReset",
+                getBooleanProperty("appium.noReset", true));
+        options.setCapability("appium:dontStopAppOnReset",
+                getBooleanProperty("appium.dontStopAppOnReset", true));
+        options.setCapability("appium:newCommandTimeout",
+                getIntProperty("appium.newCommandTimeout", 300));
+        options.setCapability("appium:autoGrantPermissions",
+                getBooleanProperty("appium.autoGrantPermissions", true));
 
         AndroidDriver driver = new AndroidDriver(serverUrl, options);
         driver.manage().timeouts().implicitlyWait(implicitWait);
         return driver;
+    }
+
+    private static boolean getBooleanProperty(String key, boolean defaultValue) {
+        String value = ConfigReader.getProperty(key);
+        return (value != null && !value.isEmpty()) ? Boolean.parseBoolean(value.trim()) : defaultValue;
+    }
+
+    private static int getIntProperty(String key, int defaultValue) {
+        String value = ConfigReader.getProperty(key);
+        if (value != null && !value.isEmpty()) {
+            try {
+                return Integer.parseInt(value.trim());
+            } catch (NumberFormatException e) {
+                System.err.println("Invalid integer format for key '" + key + "', falling back to default: " + defaultValue);
+            }
+        }
+        return defaultValue;
     }
 }
