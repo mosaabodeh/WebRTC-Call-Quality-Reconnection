@@ -50,11 +50,7 @@ public class CallPage extends BasePage {
             return false;
         }
     }
-    protected static void waiteForTime(double durationOfSecond)   {
-        try { Thread.sleep(Duration.ofSeconds((long) durationOfSecond)); } catch (InterruptedException ignored) {}
 
-
-    }
 
     public String getCallStatus() {
         try {

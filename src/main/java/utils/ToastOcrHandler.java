@@ -141,4 +141,6 @@ public class ToastOcrHandler {
         System.err.println("Missed call banner not found. Last OCR read: " + lastSeenText);
         return false;
     }
+
+
 }

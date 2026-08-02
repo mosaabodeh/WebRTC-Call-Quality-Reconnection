@@ -191,7 +191,7 @@ public class ElementRegistry {
         mobile.put(ElementKey.CALL_BY_CONCORDE,
                 AppiumBy.accessibilityId("Call"));
         mobile.put(ElementKey.LIVE_BUTTON_COORDINATE,
-                AppiumBy.androidUIAutomator("new UiSelector().text(\\\"LIVE\\\")"));
+                AppiumBy.androidUIAutomator("new UiSelector().text(\"LIVE\")"));
 
         REGISTRY.put("android", mobile);
     }

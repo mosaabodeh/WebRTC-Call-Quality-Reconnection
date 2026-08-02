@@ -32,6 +32,11 @@ public class BasePage {
         long timeout = Long.parseLong(ConfigReader.getProperty("timeout.explicit", "10"));
         this.wait = new WebDriverWait(driver, Duration.ofSeconds(timeout));
     }
+    protected static void waiteForTime(double durationOfSecond)   {
+        try { Thread.sleep(Duration.ofSeconds((long) durationOfSecond)); } catch (InterruptedException ignored) {}
+
+
+    }
 
     protected boolean isDisplayed(By locator) {
         try {
@@ -89,20 +94,7 @@ public class BasePage {
         hideKeyboardIfShown();
     }
 
-    public String getErrorMessage() {
-        try {
-            String toastText = ToastOcrHandler.captureAndReadToast(driver);
-            return toastText == null ? "" :
-                    toastText.toLowerCase()
-                            .replace("\r", " ")
-                            .replace("\n", " ")
-                            .replaceAll("\\s+", " ")
-                            .trim();
-        } catch (Exception e) {
-            System.out.println("⚠️ Mobile OCR error: " + e.getMessage());
-            return "";
-        }
-    }
+
     public void clickJoinButton() {
         Dimension size = driver.manage().window().getSize();
 
@@ -117,7 +109,8 @@ public class BasePage {
         System.out.println("Clicked Join button at: X=" + x + ", Y=" + y);
     }
     public void clickButtonByCoordinates(By ele) {
-        WebElement clickedElementButton = driver.findElement(ele);
+        waiteForTime(2);
+        WebElement clickedElementButton = waitVisible(ele);
 
         Point location = clickedElementButton.getLocation();
         Dimension size = clickedElementButton.getSize();

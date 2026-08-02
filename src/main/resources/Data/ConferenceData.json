@@ -1,4 +1,6 @@
 {
   "meetingLocked": "You have locked the meeting",
-  "userMuted": "You are muted"
+  "userMuted": "You are muted",
+  "userLocked": "this conference has been locked, you are not allowed to enter the meeting",
+  "recordWithTranscript": "You have started a recording and a transcript. Make sure to inform all participants."
 }

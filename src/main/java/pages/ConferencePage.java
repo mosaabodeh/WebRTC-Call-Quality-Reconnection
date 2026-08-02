@@ -5,12 +5,10 @@ import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.clipboard.HasClipboard;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 import pages.locators.ElementKey;
 import pages.locators.ElementRegistry;
 import utils.*;
 
-import java.time.Duration;
 import java.util.List;
 
 import static pages.CallPage.waiteForTime;
@@ -155,7 +153,7 @@ public class ConferencePage extends BasePage{
         enableDelete();
         startRecording();
     String res=getRecordingMessage();
-    return res.contains("You have started a recording and a transcript. Make sure to inform all participants.")&&isRecordingStarted();
+    return res.contains(JsonReader.getTestData("ConferenceData.json", "recordWithTranscript").toLowerCase())&&isRecordingStarted();
     }
 
     public void stopRecording() {
@@ -187,11 +185,13 @@ public class ConferencePage extends BasePage{
     public boolean isConferenceLocked()   {
         clickButtonByCoordinates(ElementRegistry.get(ElementKey.LIVE_BUTTON_COORDINATE));
         clickJoinButton();
-        waiteForTime(1.5);
-        String res=ToastOcrHandler.captureAndReadToast(driver);
-        System.out.println("[" + res + "]");
-        return res.contains(
-                "this conference has been locked, you are not allowed to enter the meeting.");
+        boolean isLocked = ToastOcrHandler.waitForToastContaining(
+                driver,
+                JsonReader.getTestData("ConferenceData.json", "userLocked").toLowerCase(),
+                5,
+                500
+        );
+        return isLocked;
     }
     public String verifySharingLinkStander(){
         meetingOption();
