@@ -159,12 +159,15 @@ public class ConferencePage extends BasePage{
         waitClickable(ElementRegistry.get(ElementKey.START_OK_APPLY)).click();
     }
 
-    public boolean isTranscriptTextAccurate()   {
-          waiteForTime(10);
-        new NotificationUtils((AndroidDriver) driver).clickFirstNotification();
+    public boolean isTranscriptTextAccurate() {
+        NotificationUtils notifications = new NotificationUtils((AndroidDriver) driver);
+        boolean notificationReady = notifications.waitForNotificationPresent(10, 500);
+        if (!notificationReady) return false;
+
+        notifications.clickFirstNotification();
         waitClickable(ElementRegistry.get(ElementKey.SUMMARY_COBY_BUTTON)).click();
         String summaryResult = ((HasClipboard) this.driver).getClipboardText();
-        System.out.println("the Summary Result is : "+summaryResult);
+        System.out.println("the Summary Result is : " + summaryResult);
         return isSummaryCorrect(summaryResult);
     }
     public boolean isSummaryCorrect(String summary) {
@@ -176,8 +179,9 @@ public class ConferencePage extends BasePage{
         waitClickable(ElementRegistry.get(ElementKey.START_OK_APPLY)).click();
 
         boolean flag = waitVisible(ElementRegistry.get(ElementKey.MEETING_LOCK)).isDisplayed();
-        String res = getToastMessage();
-        return flag && res.toLowerCase().contains(JsonReader.getTestData("ConferenceData.json", "meetingLocked").toLowerCase());
+        boolean toastAppeared = ToastOcrHandler.waitForToastContaining(driver,
+                JsonReader.getTestData("ConferenceData.json", "meetingLocked").toLowerCase(), 5, 500);
+        return flag && toastAppeared;
     }
     public boolean isConferenceLocked()   {
         clickButtonByCoordinates(ElementRegistry.get(ElementKey.LIVE_BUTTON_COORDINATE));

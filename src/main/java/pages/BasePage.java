@@ -126,19 +126,7 @@ public class BasePage {
     }
 
 
-    public String getToastMessage() {
-        By toastLocator = AppiumBy.xpath("//android.widget.Toast");
 
-        WebDriverWait shortWait = new WebDriverWait(driver, Duration.ofSeconds(5));
-        WebElement toastElement = shortWait.until(
-                ExpectedConditions.presenceOfElementLocated(toastLocator));
-        String toastText = toastElement.getText();
-        if (toastText == null || toastText.isEmpty()) {
-            toastText = toastElement.getAttribute("text");
-        }
-
-        return toastText;
-    }
 
     protected void hideKeyboardIfShown() {
         try {
