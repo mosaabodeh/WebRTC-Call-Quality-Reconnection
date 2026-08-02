@@ -39,12 +39,7 @@ public class DashboardPage extends BasePage {
         clickIfElementAppears(ElementRegistry.get(ElementKey.ALLOW_BUTTON));
         waitClickable(ElementRegistry.get(ElementKey.AUDIO_CALL_BUTTON)).click();
     }
-    public void MissedContact(String contactName)  {
-        searchForUserAndClickCallButton(contactName);
-        clickIfElementAppears(ElementRegistry.get(ElementKey.ALLOW_BUTTON));
-        waitClickable(ElementRegistry.get(ElementKey.AUDIO_CALL_BUTTON)).click();
 
-    }
     public void videoCallContact(String contactName){
         searchForUserAndClickCallButton(contactName);
         clickIfElementAppears(ElementRegistry.get(ElementKey.ALLOW_ACCESS_CAMERA));

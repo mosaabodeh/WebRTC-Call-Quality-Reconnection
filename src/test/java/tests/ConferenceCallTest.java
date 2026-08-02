@@ -174,7 +174,7 @@ public class ConferenceCallTest extends BaseTest {
     @Test(priority = 20,description = "user should be able to verify the missed Call Notification when he app is in the foreground state")
     public void testVerifyMissedCallNotification()   {
         establishBaseCall();
-        dashboardAInstance.MissedContact(nameB);
+        dashboardAInstance.callContact(nameB);
         conA.missCall();
         Assert.assertTrue( conB.isMissedCallNotificationAppear(),"Missed call banner not detected via OCR");
     }
@@ -182,7 +182,7 @@ public class ConferenceCallTest extends BaseTest {
     @Test(priority = 21, description = "User should receive a missed call notification when the app is in the background state")
     public void testVerifyMissedCallNotificationAppInBackground() {
         establishBaseCall();
-        dashboardAInstance.MissedContact(nameB);
+        dashboardAInstance.callContact(nameB);
         notification.sendAppToBackground();
         conA.missCall();
         Assert.assertTrue(notification.isMissedCallNotificationDisplayed( nameC),
@@ -194,7 +194,7 @@ public class ConferenceCallTest extends BaseTest {
     @Test(priority = 22, description = "User should receive a missed call notification when the app is terminated")
     public void testVerifyMissedCallNotificationAppTerminated() {
         establishBaseCall();
-        dashboardAInstance.MissedContact(nameB);
+        dashboardAInstance.callContact(nameB);
         notification.terminateApp("com.ale.rainbow");
         conA.missCall();
 
@@ -210,7 +210,7 @@ public class ConferenceCallTest extends BaseTest {
     @Test(priority = 23, description = "App icon should indicate the number of missed calls")
     public void testVerifyAppIconMissedCallBadgeCount() {
         establishBaseCall();
-        dashboardAInstance.MissedContact(nameB);
+        dashboardAInstance.callContact(nameB);
         conA.missCall();
         notification.sendAppToBackground();
 
