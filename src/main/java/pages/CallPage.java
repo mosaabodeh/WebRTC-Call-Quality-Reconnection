@@ -144,7 +144,9 @@ public class CallPage extends BasePage {
             );
         }
     }
-
+    public void missCall() {
+        waitClickable(ElementRegistry.get(ElementKey.CANCEL_CALL_BUTTON)).click();
+    }
     private String queryAppState( String appId) {
         Object result = driver.executeScript("mobile: queryAppState",
                 Collections.singletonMap("appId", appId));

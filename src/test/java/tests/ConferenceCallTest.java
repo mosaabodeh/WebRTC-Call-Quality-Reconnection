@@ -175,7 +175,7 @@ public class ConferenceCallTest extends BaseTest {
     public void testVerifyMissedCallNotification()   {
         establishBaseCall();
         dashboardAInstance.callContact(nameB);
-        conA.missCall();
+        callA.get().missCall();
         Assert.assertTrue( conB.isMissedCallNotificationAppear(),"Missed call banner not detected via OCR");
     }
 
@@ -184,7 +184,7 @@ public class ConferenceCallTest extends BaseTest {
         establishBaseCall();
         dashboardAInstance.callContact(nameB);
         notification.sendAppToBackground();
-        conA.missCall();
+        callA.get().missCall();
         Assert.assertTrue(notification.isMissedCallNotificationDisplayed( nameC),
                 "Missed call notification was not received while app is in background");
 
@@ -196,7 +196,7 @@ public class ConferenceCallTest extends BaseTest {
         establishBaseCall();
         dashboardAInstance.callContact(nameB);
         notification.terminateApp("com.ale.rainbow");
-        conA.missCall();
+        callA.get().missCall();
 
         try {
             boolean isNotificationReceived = notification.isMissedCallNotificationDisplayed(nameC);
@@ -211,7 +211,7 @@ public class ConferenceCallTest extends BaseTest {
     public void testVerifyAppIconMissedCallBadgeCount() {
         establishBaseCall();
         dashboardAInstance.callContact(nameB);
-        conA.missCall();
+        callA.get().missCall();
         notification.sendAppToBackground();
 
         Assert.assertTrue( notification.getAppIconBadgeCount() > 0,"App icon badge count does not indicate missed calls");

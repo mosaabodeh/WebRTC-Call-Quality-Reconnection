@@ -309,9 +309,7 @@ public class ConferencePage extends BasePage{
         return contentDesc.contains(name) && contentDesc.contains(rule);
 
     }
-    public void missCall() {
-        waitClickable(ElementRegistry.get(ElementKey.CANCEL_CALL_BUTTON)).click();
-    }
+
     public boolean isMissedCallNotificationAppear() {
         return ToastOcrHandler.waitForMissedCallBanner(driver, 8, 500);
 
