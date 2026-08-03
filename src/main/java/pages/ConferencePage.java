@@ -114,13 +114,10 @@ public class ConferencePage extends BasePage{
 
     public boolean isGridViewExist(){
         openMoreOptionsMenu();
-        try {
-            String res = waitVisible(ElementRegistry.get(ElementKey.GRID_VIEW)).getText();
-            System.out.println("The Result is : "+res);
-            return res.contains("Grid view");
-        } finally {
-            closeMoreOptionsMenu();
-        }
+        String res=waitVisible(ElementRegistry.get(ElementKey.GRID_VIEW)).getText();
+        System.out.println("The Result is : "+res);
+        closeMoreOptionsMenu();
+        return res.contains("Grid view");
     }
     private void openRecording(){
         openMoreOptionsMenu();
