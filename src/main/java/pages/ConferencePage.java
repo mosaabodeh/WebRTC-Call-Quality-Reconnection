@@ -17,11 +17,9 @@ public class ConferencePage extends BasePage{
         super(driver);
     }
     public void sharingScreen()   {
-        waiteForTime(3);
-        waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
+        openMoreOptionsMenu();
         waitClickable(ElementRegistry.get(ElementKey.SHARE_SCREEN_BUTTON)).click();
-        waitClickable(ElementRegistry.get(ElementKey.START_OK_APPLY)).click();
-    }
+        clickApplyButton();    }
     public boolean isSharingScreen() {
         System.out.println("inside the is sharing function");
         try {
@@ -31,21 +29,24 @@ public class ConferencePage extends BasePage{
             }
             waitClickable(ElementRegistry.get(ElementKey.VIEW_FULL_SHARING_SCREEN)).click();
             return true;
-        } catch (TimeoutException e) {
+        } catch (TimeoutException | NoSuchElementException   e) {
             return false;
         }
     }
+    private void openMoreOptionsMenu() { waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click(); }
+    private void clickApplyButton() { waitClickable(ElementRegistry.get(ElementKey.START_OK_APPLY)).click(); }
+
     public void muteAllUsersInTheConference() {
-        waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
+        openMoreOptionsMenu();
         waitClickable(ElementRegistry.get(ElementKey.MUTE_ALL)).click();
-        waitClickable(ElementRegistry.get(ElementKey.START_OK_APPLY)).click();
+        clickApplyButton();
     }
 
     public boolean isMutedToastAppear() {
         return ToastOcrHandler.waitForToastContaining(driver, JsonReader.getTestData("ConferenceData.json", "userMuted"), 5, 500);
     }
     public void participantList(){
-        waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
+        openMoreOptionsMenu();
         waitClickable(ElementRegistry.get(ElementKey.PARTICIPANT_LIST)).click();
     }
     public boolean verifyUserRuleInRainbowUsingList(String name, String expectedRole) {
@@ -104,37 +105,41 @@ public class ConferencePage extends BasePage{
         }
 }
    public void speakerOnlyMode(){
-        waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
+        openMoreOptionsMenu();
         waitClickable(ElementRegistry.get(ElementKey.SPEAKER_ONLY_MODE)).click();
 
+    }private void closeMoreOptionsMenu() {
+        driver.navigate().back();
     }
+
     public boolean isGridViewExist(){
-        waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
-        String res=waitVisible(ElementRegistry.get(ElementKey.GRID_VIEW)).getText();
-        System.out.println("The Result is : "+res);
-        return res.contains("Grid view");
+        openMoreOptionsMenu();
+        try {
+            String res = waitVisible(ElementRegistry.get(ElementKey.GRID_VIEW)).getText();
+            System.out.println("The Result is : "+res);
+            return res.contains("Grid view");
+        } finally {
+            closeMoreOptionsMenu();
+        }
     }
-    void openRecording(){
-        waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
+    private void openRecording(){
+        openMoreOptionsMenu();
         waitClickable(ElementRegistry.get(ElementKey.RECODE_WITH_TRANSCRIPT)).click();
     }
 
-    void enableTranscript(){
+    private void enableTranscript(){
         waitClickable(ElementRegistry.get(ElementKey.TRANSCRIPTION_SWITCH)).click();
     }
 
-   void enableSummary(){
+    private void enableSummary(){
        waitClickable(ElementRegistry.get(ElementKey.SUMMARY_SWITCH)).click();
 
    }
-   void enableDelete(){
+    private void enableDelete(){
         scrollToBottom();
        waitClickable(ElementRegistry.get(ElementKey.DELETE_RECORD_SWITCH)).click();
    }
 
-    private void startRecording(){
-        waitClickable(ElementRegistry.get(ElementKey.START_OK_APPLY)).click();
-    }
 
    private  boolean isRecordingStarted(){
         return isDisplayed(ElementRegistry.get(ElementKey.RECORD_INDICATOR));
@@ -148,15 +153,15 @@ public class ConferencePage extends BasePage{
         enableTranscript();
         enableSummary();
         enableDelete();
-        startRecording();
+        clickApplyButton();
     String res=getRecordingMessage();
     return res.contains(JsonReader.getTestData("ConferenceData.json", "recordWithTranscript"))&&isRecordingStarted();
     }
 
     public void stopRecording() {
-        waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
+        openMoreOptionsMenu();
         waitClickable(ElementRegistry.get(ElementKey.STOP_RECORDING)).click();
-        waitClickable(ElementRegistry.get(ElementKey.START_OK_APPLY)).click();
+        clickApplyButton();
     }
 
     public boolean isTranscriptTextAccurate() {
@@ -174,10 +179,9 @@ public class ConferencePage extends BasePage{
         return SummaryValidator.isSummaryValid(summary);
     }
     public boolean lockTheMeeting() {
-        waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
+        openMoreOptionsMenu();
         waitClickable(ElementRegistry.get(ElementKey.LOCK_MEETING)).click();
-        waitClickable(ElementRegistry.get(ElementKey.START_OK_APPLY)).click();
-
+        clickApplyButton();
         boolean flag = isDisplayed(ElementRegistry.get(ElementKey.MEETING_LOCK));
         boolean toastAppeared = ToastOcrHandler.waitForToastContaining(driver,
                 JsonReader.getTestData("ConferenceData.json", "meetingLocked").toLowerCase(), 5, 500);
@@ -212,8 +216,7 @@ public class ConferencePage extends BasePage{
 
    private void generatePassword(){
         waitClickable(ElementRegistry.get(ElementKey.REGENERATE_NEW_PASSWORD)).click();
-       waitClickable(ElementRegistry.get(ElementKey.START_OK_APPLY)).click();
-
+       clickApplyButton();
 
    }
     public boolean verifySharingBubbleWithCustomSetting(boolean waitingRoom,boolean protectedWithPassword)   {
@@ -233,18 +236,18 @@ public class ConferencePage extends BasePage{
         return true;
     }
     public void turnedOffIncomingVideo(){
-        waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
+        openMoreOptionsMenu();
         waitClickable(ElementRegistry.get(ElementKey.TURN_OFF_INCOMING_VIDEO)).click();
 
     }
     public boolean isShareScreenAppear(){
         try {
             return isDisplayed(ElementRegistry.get(ElementKey.SHARE_SCREEN_GRID));
-        } catch (Exception e) {
+        } catch (TimeoutException | NoSuchElementException  e) {
             return false;
         }    }
     public void turnedOffIncomingSharing()   {
-        waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
+        openMoreOptionsMenu();
         waitClickable(ElementRegistry.get(ElementKey.TURNOFF_INCOMING_SHARING)).click();
     }
     private String clickAndCopyPassword() {
@@ -254,7 +257,7 @@ public class ConferencePage extends BasePage{
         return actualClipboardText;
     }
     private void meetingOption(){
-        waitClickable(ElementRegistry.get(ElementKey.MORE_OPTION)).click();
+        openMoreOptionsMenu();
         waitClickable(ElementRegistry.get(ElementKey.MEETING_OPTION)).click();
     }
     public void configureMeetingOptions(boolean muteWhenEnter, boolean playSound)  {
