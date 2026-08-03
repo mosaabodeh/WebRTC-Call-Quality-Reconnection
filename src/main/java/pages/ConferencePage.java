@@ -108,15 +108,12 @@ public class ConferencePage extends BasePage{
         openMoreOptionsMenu();
         waitClickable(ElementRegistry.get(ElementKey.SPEAKER_ONLY_MODE)).click();
 
-    }private void closeMoreOptionsMenu() {
-        driver.navigate().back();
     }
-
     public boolean isGridViewExist(){
         openMoreOptionsMenu();
         String res=waitVisible(ElementRegistry.get(ElementKey.GRID_VIEW)).getText();
         System.out.println("The Result is : "+res);
-        closeMoreOptionsMenu();
+        clickNavigationBack();
         return res.contains("Grid view");
     }
     private void openRecording(){
