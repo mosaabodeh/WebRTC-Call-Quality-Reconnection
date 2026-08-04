@@ -43,7 +43,7 @@ public class BaseTest {
     RaseHandPage rasB;
     TalkingTimePage talkA;
     NotificationUtils notification;
-    ChromeNavigationUtils chromeNavigation;
+    GoogleNavigationUtils chromeNavigation;
 
     protected String emailA, passwordA, emailB, passwordB, nameB, nameC, udidB;
     protected DashboardPage dashboardAInstance;
@@ -217,7 +217,7 @@ public class BaseTest {
         resA = new RaseHandPage(driverA);
         rasB = new RaseHandPage(driverB);
         talkA = new TalkingTimePage(driverA);
-        chromeNavigation = new ChromeNavigationUtils(driverB);
+        chromeNavigation = new GoogleNavigationUtils(driverB);
         notification = new NotificationUtils(driverB);
 
         List<CompletableFuture<Void>> loginTasks = new ArrayList<>();

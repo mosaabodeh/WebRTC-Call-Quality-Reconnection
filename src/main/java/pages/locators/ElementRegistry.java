@@ -91,13 +91,14 @@ public class ElementRegistry {
                 AppiumBy.androidUIAutomator("new UiSelector().className(\"android.widget.Button\").instance(1)"));
         mobile.put(ElementKey.PARTICIPANTS_RECYCLER_VIEW,
                 AppiumBy.id("com.ale.rainbow:id/room_participants_recyclerview"));
+        mobile.put(ElementKey.MEETING_FILL_PASSWORD, AppiumBy.id("com.ale.rainbow:id/room_password"));
         mobile.put(ElementKey.EMAIL_FIELD,
                 AppiumBy.androidUIAutomator("new UiSelector().className(\"android.widget.EditText\").instance(0)"));
         mobile.put(ElementKey.LAST_BUBBLE_CREATED,
                 AppiumBy.xpath("//androidx.recyclerview.widget.RecyclerView[@resource-id=\"com.ale.rainbow:id/rooms_list_recyclerview\"]/android.widget.Button[1]"));
         mobile.put(ElementKey.MUTE_BUTTON, AppiumBy.xpath("//android.widget.Button[@content-desc=\"Mute\"]"));
         mobile.put(ElementKey.UNMUTE_BUTTON, AppiumBy.xpath("//android.widget.Button[@content-desc=\"Unmute\"]"));
-        mobile.put(ElementKey.SUMMARY_COBY_BUTTON,
+        mobile.put(ElementKey.SUMMARY_COPY_BUTTON,
                 AppiumBy.androidUIAutomator("new UiSelector().className(\"android.view.View\").instance(3)"));
         mobile.put(ElementKey.TURNOFF_INCOMING_SHARING,
                 AppiumBy.androidUIAutomator("new UiSelector().className(\"android.widget.LinearLayout\").instance(8)"));
@@ -127,14 +128,18 @@ public class ElementRegistry {
                 AppiumBy.androidUIAutomator("new UiSelector().className(\"android.widget.LinearLayout\").instance(2)"));
         mobile.put(ElementKey.MUTE_ALL,
                 AppiumBy.androidUIAutomator("new UiSelector().className(\"android.widget.LinearLayout\").instance(6)"));
-        mobile.put(ElementKey.RECODE_WITH_TRANSCRIPT,
+        mobile.put(ElementKey.RECORDE_WITH_TRANSCRIPT,
                 AppiumBy.androidUIAutomator("new UiSelector().className(\"android.widget.LinearLayout\").instance(14)"));
         mobile.put(ElementKey.LOCK_MEETING,
-                AppiumBy.androidUIAutomator("new UiSelector().resourceId(\"com.ale.rainbow:id/content\").instance(6)"));
+                AppiumBy.androidUIAutomator("new UiSelector().resourceId(\"com.ale.rainbow:id/content\").instance(7)"));
         mobile.put(ElementKey.PARTICIPANT_LIST,
                 AppiumBy.androidUIAutomator("new UiSelector().className(\"android.widget.LinearLayout\").instance(18)"));
         mobile.put(ElementKey.TALKING_TIME,
                 AppiumBy.androidUIAutomator("new UiSelector().className(\"android.widget.LinearLayout\").instance(20)"));
+        mobile.put(ElementKey.BUBBLE_SETTING,
+                AppiumBy.androidUIAutomator("new UiSelector().className(\"android.view.View\").instance(19)"));
+        mobile.put(ElementKey.CANCEL_BUTTON,
+                AppiumBy.id("android:id/button2"));
         mobile.put(ElementKey.MEETING_OPTION,
                 AppiumBy.androidUIAutomator("new UiSelector().className(\"android.widget.LinearLayout\").instance(22)"));
         mobile.put(ElementKey.TRANSCRIPTION_SWITCH,

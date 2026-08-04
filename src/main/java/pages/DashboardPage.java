@@ -60,6 +60,4 @@ public class DashboardPage extends BasePage {
         click(ElementRegistry.get(ElementKey.CONTINUE));
     }
 
-
-
 }

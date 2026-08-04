@@ -6,17 +6,21 @@ import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.android.nativekey.AndroidKey;
 import io.appium.java_client.android.nativekey.KeyEvent;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Dimension;
+import org.openqa.selenium.Point;
 import org.openqa.selenium.WebElement;
+
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class ChromeNavigationUtils extends BasePage {
+public class GoogleNavigationUtils extends BasePage {
 
-    public ChromeNavigationUtils(AppiumDriver driver) {
+    public GoogleNavigationUtils(AppiumDriver driver) {
         super(driver);
     }
 
@@ -51,9 +55,53 @@ public class ChromeNavigationUtils extends BasePage {
         activeUrlBar.sendKeys(firstLink);
         androidDriver.pressKey(new KeyEvent(AndroidKey.ENTER));
     }
+    private String extractUrl(String text) {
 
-   public void reopenRainbow(){
-        AndroidDriver androidDriver = (AndroidDriver) driver;
-        androidDriver.activateApp("com.ale.rainbow");
+        Pattern pattern = Pattern.compile(
+                "(https?://\\S+)"
+        );
+
+        Matcher matcher = pattern.matcher(text);
+
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+
+        throw new RuntimeException("No meeting URL found in invitation");
     }
+    public void openMeetingLinkInRainbow(String meetingLink) {
+
+        AndroidDriver androidDriver = (AndroidDriver) driver;
+        String link = extractUrl(meetingLink);
+        WebDriverWait wait = new WebDriverWait(androidDriver, Duration.ofSeconds(15));
+
+        // Open Google Search app
+        androidDriver.activateApp("com.google.android.googlequicksearchbox");
+        WebElement searchText = wait.until(ExpectedConditions.presenceOfElementLocated(
+                        AppiumBy.androidUIAutomator("new UiSelector().text(\"Search\").instance(0)")));
+        Point location = searchText.getLocation();
+        Dimension size = searchText.getSize();
+
+        int centerX = location.getX() + (size.getWidth() / 2);
+        int centerY = location.getY() + (size.getHeight() / 2);
+
+        System.out.println("Google Search coordinates X=" + centerX + " Y=" + centerY);
+
+        Map<String, Object> click = new HashMap<>();
+        click.put("x", centerX);
+        click.put("y", centerY);
+
+        androidDriver.executeScript("mobile: clickGesture", click);
+        WebElement searchBox = wait.until(
+                ExpectedConditions.elementToBeClickable(
+                        AppiumBy.id(
+                                "com.google.android.googlequicksearchbox:id/googleapp_search_box")));
+        searchBox.click();
+        searchBox.sendKeys(link);
+        androidDriver.pressKey(
+                new KeyEvent(AndroidKey.ENTER)
+        );
+    }
+
+
 }

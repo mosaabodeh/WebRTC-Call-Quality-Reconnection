@@ -81,7 +81,7 @@ public class ConferenceCallTest extends BaseTest {
     @Test(priority = 11,description = "user should be able to Lock the meeting to prevent users joining when needed ")
     public void testLockMeeting()   {
         establishBaseCall();
-        conA.startLockedConference();
+        conA.startLastConference();
         callB.get().rejectIncomingCall();
         Assert.assertTrue(conA.lockTheMeeting(), "The Meeting Lock icon and toast message dose not appear ");
         Assert.assertTrue(conB.isConferenceLocked(), "Device B can Enter the Meeting Conference Successfully !!!.");
@@ -91,7 +91,6 @@ public class ConferenceCallTest extends BaseTest {
     public void testTalkingTime() {
         prepareConference();
         String localAudioPath = System.getProperty("user.dir") + "/src/test/resources/audio/25 secondVoiceRecord.mp3";
-
         AudioUtils.startAudioAndAwaitStart(localAudioPath);
 
         conB.muteFor(2);
@@ -119,21 +118,21 @@ public class ConferenceCallTest extends BaseTest {
         prepareConference();
         String res=conA.verifySharingLinkStander();
         System.out.println("the share Link is :"+res);
-        chromeNavigation.openChromeAndNavigateToFirstLink(res);
-        chromeNavigation.reopenRainbow();
-        conB.returnToActiveCall();
+        chromeNavigation.openMeetingLinkInRainbow(res);
+        Assert.assertTrue(conB.isBubbleSettingAppear(),"The Bubble Dosnt appear Successfully");
 
     }
 
     @Test(priority = 15,description = "user should be able to change The Conference joining setting And add password, waiting room past the copied link of the conference in google chrome ")
     public void testFillUrlInChromeWithPassword()   {
         prepareConference();
-        conA.verifySharingBubbleWithCustomSetting(true,true);
-        String res=conA.shareLink();
-        chromeNavigation.openChromeAndNavigateToFirstLink(res);
-        chromeNavigation.reopenRainbow();
+      String  pass=conA.verifySharingBubbleWithCustomSetting(true, true);
 
-        conB.returnToActiveCall();
+        String res=conA.shareLink();
+        chromeNavigation.openMeetingLinkInRainbow(res);
+        conB.fillMeetingPasswordAndJoin(pass);
+        Assert.assertTrue(conB.isBubbleSettingAppear(),"The Bubble Dosnt appear Successfully");
+
     }
 
     @Test(priority = 16,description = "user should be able to Turn Off incoming sharing screen and stop se the share in the grid ")
@@ -149,9 +148,9 @@ public class ConferenceCallTest extends BaseTest {
     public void testVerifyUSerRoll()   {
         prepareConference();
         conA.participantList();
-        Assert.assertTrue(conA.verifyUserRuleInRaibow("Mosaab Teat(.net)","Owner"), "Owner role mismatch");
-        Assert.assertTrue(conA.verifyUserRuleInRaibow("Mosaab m odeh","Member"), "Member role mismatch");
-        Assert.assertTrue(conA.verifyUserRuleInRaibow("mosaab odeh","Organizer"), "Organizer role mismatch");
+        Assert.assertTrue(conA.verifyUserRuleInRainbow("Mosaab Teat(.net)","Owner"), "Owner role mismatch");
+        Assert.assertTrue(conA.verifyUserRuleInRainbow("Mosaab m odeh","Member"), "Member role mismatch");
+        Assert.assertTrue(conA.verifyUserRuleInRainbow("mosaab odeh","Organizer"), "Organizer role mismatch");
         conA.clickNavigationBack();
     }
 

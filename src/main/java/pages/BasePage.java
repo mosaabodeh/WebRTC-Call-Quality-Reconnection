@@ -1,6 +1,5 @@
 package pages;
 
-import io.appium.java_client.AppiumBy;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.HasOnScreenKeyboard;
 import io.appium.java_client.HidesKeyboard;
@@ -17,7 +16,6 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import pages.locators.ElementKey;
 import pages.locators.ElementRegistry;
 import utils.ConfigReader;
-import utils.ToastOcrHandler;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,27 +46,7 @@ public class BasePage {
     public void scrollToBottom() {
         driver.findElement((ElementRegistry.get(ElementKey.SCROLL_TO_BUTTON)));
     }
-    public void returnToActiveCall() {
-        AndroidDriver androidDriver = (AndroidDriver) driver;
 
-        try {
-            androidDriver.openNotifications();
-            By callNotificationLocator = AppiumBy.xpath(
-                    "//*[@package='com.ale.rainbow' or contains(@text, 'Audio call') or contains(@text, 'Return to call')]"
-            );
-            WebElement notification = waitClickable(callNotificationLocator);
-            int centerX = notification.getLocation().getX() + (notification.getSize().getWidth() / 2);
-            int centerY = notification.getLocation().getY() + (notification.getSize().getHeight() / 2);
-            Map<String, Object> tapParams = new HashMap<>();
-            tapParams.put("x", centerX);
-            tapParams.put("y", centerY);
-            androidDriver.executeScript("mobile: clickGesture", tapParams);
-
-        } catch (Exception e) {
-            androidDriver.pressKey(new KeyEvent(AndroidKey.BACK));
-            throw new RuntimeException("Failed to click the active call notification.", e);
-        }
-    }
     protected WebElement waitVisible(By locator) {
         return wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
     }
